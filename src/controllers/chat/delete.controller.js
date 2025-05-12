@@ -1,0 +1,1 @@
+//para eliminar el historial de chat por si quiere el usuario

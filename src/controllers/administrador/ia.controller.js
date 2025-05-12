@@ -1,0 +1,1 @@
+//realiza consultas sobre la base de datos, puede ser tambien gestion de dashboard - para ver

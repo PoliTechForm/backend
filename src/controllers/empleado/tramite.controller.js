@@ -1,0 +1,1 @@
+//sirve para ver los tramites del ciudadano, ya sean pendientes o si quiere hacer uno, quien sabe

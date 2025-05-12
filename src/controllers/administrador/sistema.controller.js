@@ -1,0 +1,1 @@
+//para ver el uso del sistema, extraiga datos de la base de datos, haga analisis y muestre en graficos 

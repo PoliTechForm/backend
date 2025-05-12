@@ -1,0 +1,1 @@
+//para dar nota segun la actividad de un ciudadano, ya sea para tener en cuenta futuras visitas al lugar o algo asi, para poder conllevar mejor el ambiente laboral y poder tener en cuenta las actitudes de la persona para notificar y dar de baja la cuenta si no es algo bueno
