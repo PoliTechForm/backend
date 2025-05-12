@@ -1,0 +1,1 @@
+//va usar la ia para hacer resumenes de cuentas o ayuda documental de algun ciudadano

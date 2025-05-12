@@ -1,0 +1,1 @@
+//sirve para enviar el mensaje a la ia(que esta en otro backend)
