@@ -2,13 +2,14 @@ import bcrypt from 'bcrypt';
 import pool from '../../dataBase/pool.js';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { RECAPTCHA_SECRET_KEY } from '../../env/env.js';
 
 export const registerUser = async (req, res) => {
   const { nombre, email, password, role = 'ciudadano', captchaToken } = req.body;
 
   try {
     // Verificar captcha
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    const secretKey = RECAPTCHA_SECRET_KEY;
     const captchaResponse = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
       null,
@@ -61,7 +62,7 @@ export const verifyEmail = async (req, res) => {
   const { email, captchaToken } = req.body;
 
   try {
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    const secretKey = RECAPTCHA_SECRET_KEY;
     const captchaResponse = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
       null,
