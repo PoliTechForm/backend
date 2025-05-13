@@ -1,6 +1,8 @@
-require('dotenv').config(); // Cargar las variables del archivo .env
+import dotenv from 'dotenv';
+import pkg from 'pg';
 
-const { Pool } = require('pg');
+dotenv.config();
+const { Pool } = pkg;
 
 // Configurar el pool de conexiones con las variables de entorno
 const pool = new Pool({
@@ -14,4 +16,4 @@ const pool = new Pool({
   },
 });
 
-module.exports = pool;
+export default pool;
