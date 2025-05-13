@@ -3,6 +3,40 @@ import pool from '../../dataBase/pool.js';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
+export const loginUser= async (req,res)=>{
+  try {
+    const { email, password } = req.body;
+
+    // Verificar si el usuario existe
+    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const user = userResult.rows[0];
+
+
+    const existe = await bcrypt.compare(password, user.password_hash);
+    if (!existe) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    return res.json({ message: 'Inicio de sesión exitoso', user });
+  } catch (err) {
+    console.error('Error en el inicio de sesión:', err.message);
+    res.status(500).json({ error: 'Error del servidor' });  
+
+
+  }
+  finally {
+    // Cerrar la conexión a la base de datos
+    await pool.end();
+
+  }
+
+}
+
+
 export const registerUser = async (req, res) => {
   const { nombre, email, password, role = 'ciudadano', captchaToken } = req.body;
 
