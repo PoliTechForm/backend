@@ -3,7 +3,7 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import routes from './routes/index.js';  // Rutas del proyecto
+import authRouter from './routes/authRoutes.js';
 import errorHandler from './middlewares/errorHandler.js';  // Middleware global de errores
 
 const app = express();
@@ -16,7 +16,7 @@ app.use(cookieParser()); // Parseo de cookies
 app.use(express.json());  // Parseo de JSON en las peticiones
 
 // Rutas de la aplicación
-app.use('/api', routes);
+app.use('/api', authRouter);
 
 // Middleware global para manejo de errores
 app.use(errorHandler);
