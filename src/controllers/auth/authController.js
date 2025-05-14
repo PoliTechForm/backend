@@ -2,13 +2,26 @@ import bcrypt from 'bcrypt';
 import pool from '../../dataBase/pool.js';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
-import { RECAPTCHA_SECRET_KEY } from '../../env/env.js';
+
+
+export const obtenerUsuarios= async (req,res)=>{
+  try {
+    const result = await pool.query('SELECT * FROM users');
+    res.json(result.rows);
+    console.log(result.rows)
+  } catch (err) {
+    console.error('Error al obtener usuarios:', err.message);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+  finally {
+    await pool.end();
+  }
+}
 
 export const loginUser= async (req,res)=>{
   try {
     const { email, password } = req.body;
-
-    // Verificar si el usuario existe
+    
     const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (userResult.rows.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -30,9 +43,7 @@ export const loginUser= async (req,res)=>{
 
   }
   finally {
-    // Cerrar la conexión a la base de datos
     await pool.end();
-
   }
 
 }
@@ -43,7 +54,7 @@ export const registerUser = async (req, res) => {
 
   try {
     // Verificar captcha
-    const secretKey = RECAPTCHA_SECRET_KEY;
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
     const captchaResponse = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
       null,
@@ -96,7 +107,7 @@ export const verifyEmail = async (req, res) => {
   const { email, captchaToken } = req.body;
 
   try {
-    const secretKey = RECAPTCHA_SECRET_KEY;
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
     const captchaResponse = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
       null,

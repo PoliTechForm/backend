@@ -1,7 +1,9 @@
 import { Router } from 'express';
-import { loginUser, registerUser,verifyEmail } from '../controllers/auth/authController.js';
+import { loginUser, obtenerUsuarios, registerUser,verifyEmail } from '../controllers/auth/authController.js';
 
 const authRouter = Router();
+
+authRouter.get("/obtener",obtenerUsuarios)
 authRouter.post('/login', loginUser);
 authRouter.post('/register', registerUser);
 
