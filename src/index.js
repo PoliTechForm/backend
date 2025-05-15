@@ -1,5 +1,6 @@
 import app from './app.js';
+import { PORT } from './env/env.js';
 
-app.listen(4000, () => {
-  console.log(`Servidor corriendo en puerto ${4000}`);
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
