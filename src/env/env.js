@@ -9,3 +9,4 @@ export const DB_PORT=process.env.DB_PORT
 export const PORT = process.env.PORT
 export const SITE_KEY = process.env.SITE_KEY
 export const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY
+export const SECRET_KEY = process.env.SECRET_KEY

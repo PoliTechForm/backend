@@ -4,21 +4,24 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import authRouter from './routes/authRoutes.js';
-import errorHandler from './middlewares/errorHandler.js';  // Middleware global de errores
+import userRoute from './routes/userRoutes.js';
+import errorHandler from './middlewares/errorHandler.js';
 
 const app = express();
 
-// Middlewares
-app.use(morgan('dev')); // Logger de peticiones HTTP
-app.use(helmet());      // Protección contra ataques comunes
-app.use(cors());        // Habilitar CORS
-app.use(cookieParser()); // Parseo de cookies
-app.use(express.json());  // Parseo de JSON en las peticiones
+app.use(morgan('dev'));
+app.use(helmet());
+app.use(cookieParser());
+app.use(cors({
+    origin: ["http://localhost:5173", ""],
+    credentials: true
+}));
 
-// Rutas de la aplicación
+app.use(express.json());
+
 app.use('/api', authRouter);
+app.use('/api', userRoute);
 
-// Middleware global para manejo de errores
 app.use(errorHandler);
 
 export default app;
