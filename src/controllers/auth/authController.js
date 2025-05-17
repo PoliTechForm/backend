@@ -1,4 +1,5 @@
-import { registerUserService, userVerifyEmail, loginUserService } from '../../services/user.Auth.Service.js';
+import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService } from '../../services/user.Auth.Service.js';
+import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
 
 export const registerUser = async (req, res) => {
   const { nombre, email, password, role = 'ciudadano', captchaToken } = req.body;
@@ -28,15 +29,28 @@ export const verifyEmail = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const { token, userWithoutPassword } = await loginUserService(email, password);
+    //Nos trae los datos del usuario logueado
+    const dataLogin = await loginUserService(email, password);
 
-    res.cookie("token", token, {
+    if (dataLogin.twoFactorRequired) {
+      // Generar y enviar código 2FA
+      await generateAndSend2FACode(dataLogin.email, dataLogin.userId);
+
+      return res.status(200).json({
+        message: 'Se requiere código 2FA',
+        twoFactorRequired: true,
+        userId: dataLogin.userId,
+      });
+    }
+
+    res.cookie("token", dataLogin.token, {
       httpOnly: true,
       secure: false,
       maxAge: 3600000
     });
 
-    res.json({ message: 'Inicio de sesión exitoso', user: userWithoutPassword });
+    res.json({ message: 'Inicio de sesión exitoso', user: dataLogin.userWithoutPassword });
+
   } catch (err) {
     console.error('Error en el inicio de sesión:', err.message);
     res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
@@ -59,3 +73,49 @@ try {
 } catch (error) {
     res.status(400).json("Hubo un error inesperado.")
 }}
+
+export const verify2FACode = async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+    const token = await userVerifyTwoFactorService(userId, code);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 3600000,
+    });
+
+    res.json({ message: '2FA verificado, inicio de sesión exitoso' });
+
+  } catch (err) {
+    console.error('Error al verificar 2FA:', err.message);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { currentPassword, newPassword } = req.body;
+    await changeUserPasswordService(userId, currentPassword, newPassword)
+
+    res.json({ message: 'Contraseña actualizada con éxito' });
+  } catch (error) {
+    console.error('Error al cambiar la contraseña:', error);
+
+  // Con esto brindaremos la respuesta a los errores del servicio
+    if (error.message === 'Usuario no encontrado') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'La contraseña actual es incorrecta') {
+      return res.status(401).json({ error: error.message });
+    }
+    if (error.message === 'Se requieren ambas contraseñas') {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+

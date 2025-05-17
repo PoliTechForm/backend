@@ -1,10 +1,10 @@
 import nodemailer from 'nodemailer'
 
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: '', // AQUI DEBES PONER TU CORREO ELECTRÓNICO
+    user: 'ortegamarcelodavid77@gmail.com', // AQUI DEBES PONER TU CORREO ELECTRÓNICO
     pass: '', // AQUÍ DEBES POENR LA CLAVE DE APLICACIÓN DE TU CORREO, NO ES TU CONTRASEÑA, PARA OBTENERLO TE VAS A LAS CONFIGURACIONESS DE TU CUENTA DE GOOGLE Y BUSCAS CLAVE DE APLICACION, LO COPIAS Y LO PEGAS SIN ESPACIOS
   },
   tls: {
@@ -34,3 +34,4 @@ const sendVerificationEmail = async (email) => {
 };
 
 export default sendVerificationEmail
+

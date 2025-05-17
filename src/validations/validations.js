@@ -18,17 +18,18 @@ export const validarRegistro = [
     .withMessage("Debe ser un correo electrónico válido"),
 
   body("password")
-    .trim()
-    .notEmpty()
-    .withMessage("La contraseña no puede estar vacía")
-    .isLength({ min: 6 })
-    .withMessage("La contraseña debe tener al menos 6 caracteres")
-    .custom((value) => {
-      if (sqlInjectionPattern.test(value)) {
-        throw new Error("La contraseña contiene patrones inválidos");
-      }
-      return true;
-    }),
+  .trim()
+  .notEmpty()
+  .withMessage("La contraseña no puede estar vacía")
+  .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/)
+  .withMessage({msg: "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y símbolos"})
+  .custom((value) => {
+    if (sqlInjectionPattern.test(value)) {
+      throw new Error("La contraseña contiene patrones inválidos");
+    }
+    return true;
+  }),
+
 ];
 
 
