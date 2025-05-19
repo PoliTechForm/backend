@@ -35,4 +35,3 @@ const sendVerificationEmail = async (email) => {
 };
 
 export default sendVerificationEmail
-

@@ -2,10 +2,10 @@ import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFa
 import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
 
 export const registerUser = async (req, res) => {
-  const { nombre, email, password, role = 'ciudadano', captchaToken } = req.body;
+  const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
 
   try {
-    await registerUserService(nombre, email, password, role, captchaToken);
+    await registerUserService(nombre, email, password, role, recaptchaToken);
     res.status(201).json({
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });
@@ -29,11 +29,10 @@ export const verifyEmail = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    //Nos trae los datos del usuario logueado
+    const platform = req.headers['x-platform'] || 'web';
     const dataLogin = await loginUserService(email, password);
 
     if (dataLogin.twoFactorRequired) {
-      // Generar y enviar código 2FA
       await generateAndSend2FACode(dataLogin.email, dataLogin.userId);
 
       return res.status(200).json({
@@ -43,13 +42,21 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    res.cookie("token", dataLogin.token, {
-      httpOnly: true,
-      secure: false,
-      maxAge: 3600000
-    });
+    const responseData = { 
+      message: 'Inicio de sesión exitoso', 
+      user: dataLogin.userWithoutPassword,
+      token: dataLogin.token 
+    };
 
-    res.json({ message: 'Inicio de sesión exitoso', user: dataLogin.userWithoutPassword });
+    if (platform === 'web') {
+      res.cookie("token", dataLogin.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 3600000
+      });
+    }
+
+    res.json(responseData);
 
   } catch (err) {
     console.error('Error en el inicio de sesión:', err.message);
@@ -66,26 +73,47 @@ export const getSession = (req, res) => {
   }
 };
 
-export const logoutUser = (_req, res) => {
-try {
-    res.clearCookie("token")
-    res.status(200).json({msg: "Cierre de sessión exitoso"})
-} catch (error) {
+export const logoutUser = (req, res) => {
+  try {
+    // Plataforma del cliente
+    const platform = req.headers['x-platform'] || 'web';
+    
+    // Para web, nv la cookie
+    if (platform === 'web') {
+      res.clearCookie("token");
+    }
+    
+    // Para ambas plataformas, enviamos confirmación
+    res.status(200).json({msg: "Cierre de sesión exitoso"})
+  } catch (error) {
     res.status(400).json("Hubo un error inesperado.")
-}}
+  }
+};
 
 export const verify2FACode = async (req, res) => {
   try {
     const { userId, code } = req.body;
+    // Plataforma del cliente
+    const platform = req.headers['x-platform'] || 'web';
+    
     const token = await userVerifyTwoFactorService(userId, code);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      maxAge: 3600000,
-    });
+    // Respuesta para ambas plataformas
+    const responseData = {
+      message: '2FA verificado, inicio de sesión exitoso',
+      token: token // Incluir el token para clientes móviles
+    };
 
-    res.json({ message: '2FA verificado, inicio de sesión exitoso' });
+    // Para web, también establecemos la cookie
+    if (platform === 'web') {
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 3600000,
+      });
+    }
+
+    res.json(responseData);
 
   } catch (err) {
     console.error('Error al verificar 2FA:', err.message);
@@ -117,5 +145,3 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
-
-
