@@ -2,10 +2,10 @@ import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFa
 import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
 
 export const registerUser = async (req, res) => {
-  const { nombre, email, password, role = 'ciudadano', captchaToken } = req.body;
+  const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
 
   try {
-    await registerUserService(nombre, email, password, role, captchaToken);
+    await registerUserService(nombre, email, password, role, recaptchaToken);
     res.status(201).json({
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });

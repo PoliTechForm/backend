@@ -6,7 +6,7 @@ import axios from 'axios';
 import pool from "../dataBase/pool.js";
 import { createJwt } from "../jwt/createJwt/createJwt.js";
 
-export const registerUserService = async (nombre, email, password, role = "ciudadano", captchaToken) => {
+export const registerUserService = async (nombre, email, password, role = "ciudadano", recaptchaToken) => {
   // Verificar captcha
   const captchaResponse = await axios.post(
     'https://www.google.com/recaptcha/api/siteverify',
@@ -14,7 +14,7 @@ export const registerUserService = async (nombre, email, password, role = "ciuda
     {
       params: {
         secret: RECAPTCHA_SECRET_KEY,
-        response: captchaToken,
+        response: recaptchaToken,
       },
     }
   );

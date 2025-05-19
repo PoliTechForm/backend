@@ -29,7 +29,9 @@ export const validarRegistro = [
     }
     return true;
   }),
-
+body("recaptchaToken")
+  .notEmpty()
+  .withMessage("El token de reCAPTCHA es obligatorio"),
 ];
 
 

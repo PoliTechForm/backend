@@ -1,4 +1,5 @@
 import pool from "../../dataBase/pool.js";
+import { EMAIL_ENTERPRISE } from "../../env/env.js";
 import { transporter } from "../verify.Email.Service.js";
 
 export const generateAndSend2FACode = async (email, userId) => {
@@ -18,7 +19,7 @@ export const generateAndSend2FACode = async (email, userId) => {
 
 export const send2FACodeEmail = async (email, code) => {
   const mailOptions = {
-    from: 'tu_email@gmail.com',
+    from: EMAIL_ENTERPRISE,
     to: email,
     subject: 'Tu código de verificación 2FA',
     html: `<p>Tu código para iniciar sesión es:</p>
