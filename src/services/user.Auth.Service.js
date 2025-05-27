@@ -6,7 +6,7 @@ import axios from 'axios';
 import pool from "../dataBase/pool.js";
 import { createJwt } from "../jwt/createJwt/createJwt.js";
 
-export const registerUserService = async (nombre, email, password, role = "ciudadano", captchaToken) => {
+export const registerUserService = async (nombre, email, password, role = "ciudadano", recaptchaToken) => {
   // Verificar captcha
   const captchaResponse = await axios.post(
     'https://www.google.com/recaptcha/api/siteverify',
@@ -14,7 +14,7 @@ export const registerUserService = async (nombre, email, password, role = "ciuda
     {
       params: {
         secret: RECAPTCHA_SECRET_KEY,
-        response: captchaToken,
+        response: recaptchaToken,
       },
     }
   );
@@ -82,7 +82,16 @@ export const loginUserService = async (email, password) => {
     throw error;
   }
 
-  // Generar JWT y devolver user sin password para que el controlador maneje la cookie y la respuesta
+  // Aquí se evalúa si tiene activado el 2FA
+  if (user.two_factor_enabled) {  
+  return {
+    twoFactorRequired: true,
+    userId: user.id,
+    email: user.email,
+  };
+}
+
+  // Si no tiene 2FA, continúa con login normal
   const token = await createJwt(user.id);
   const { password_hash, ...userWithoutPassword } = user;
 
@@ -100,4 +109,53 @@ export const userVerifyEmail = async (token) => {
     throw error;
   }
 };
+
+//Verifica el código 2FA
+export const userVerifyTwoFactorService = async (userId, code) => {
+  const result = await pool.query(
+    `SELECT * FROM login_tokens
+     WHERE user_id = $1 AND token = $2 AND expires_at > now()`,
+    [userId, code]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Código 2FA inválido o expirado');
+  }
+
+  // Eliminar el token para evitar reuso
+  await pool.query(
+    `DELETE FROM login_tokens WHERE user_id = $1 AND token = $2`,
+    [userId, code]
+  );
+
+  // Generar token JWT y retornarlo
+  const token = await createJwt(userId);
+  return token;
+} 
+
+export const changeUserPasswordService = async (userId, currentPassword, newPassword) => {
+  if (!currentPassword || !newPassword) {
+      throw new Error('Se requieren ambas contraseñas');
+    }
+
+    const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    if (result.rows.length === 0) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    const user = result.rows[0];
+
+    // Verificar que la contraseña actual sea correcta
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      throw new Error('La contraseña actual es incorrecta');
+    }
+
+    // Hashear la nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+    // Actualizar la contraseña en la base de datos
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newPasswordHash, userId]);
+}
 
