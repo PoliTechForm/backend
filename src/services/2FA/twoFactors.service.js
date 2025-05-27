@@ -4,7 +4,7 @@ import { transporter } from "../verify.Email.Service.js";
 
 export const generateAndSend2FACode = async (email, userId) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutos
 
   // Guardar token en la DB
   await pool.query(
