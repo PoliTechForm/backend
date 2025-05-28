@@ -128,9 +128,26 @@ export const userVerifyTwoFactorService = async (userId, code) => {
     [userId, code]
   );
 
-  // Generar token JWT y retornarlo
+
+  // obtener los datos completos del usuario
+  const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+  if (userResult.rows.length === 0) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const user = userResult.rows[0];
+  
+  // Generar token JWT
   const token = await createJwt(userId);
-  return token;
+  
+  // Remover la contraseña del objeto usuario
+  const { password_hash, ...userWithoutPassword } = user;
+
+  // Retornar tanto el token como los datos del usuario
+  return {
+    token,
+    userWithoutPassword
+  };
 } 
 
 export const changeUserPasswordService = async (userId, currentPassword, newPassword) => {

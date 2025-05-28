@@ -15,15 +15,18 @@ export const transporter = nodemailer.createTransport({
 
 const sendVerificationEmail = async (email) => {
   // El token será el correo electrónico del usuario
-  const verificationUrl = `http://localhost:4000/api/verify?token=${encodeURIComponent(email)}`;
+  const verificationUrl = `http://localhost:4000/auth/verify?token=${encodeURIComponent(email)}`;
 
   // Configurar el contenido del correo
   const mailOptions = {
     from: EMAIL_ENTERPRISE,
     to: email,
     subject: 'Verificación de Correo Electrónico',
-    html: `<p>Haz clic en el siguiente enlace para verificar tu correo electrónico:</p>
-           <a href="${verificationUrl}">${verificationUrl}</a>`,
+    html: `
+  <p>Haz clic en el siguiente enlace para verificar tu correo electrónico:</p>
+  <a href="${verificationUrl}">${verificationUrl}</a>
+`,
+
   };
 
   try {

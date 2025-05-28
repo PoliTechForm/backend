@@ -1,5 +1,5 @@
 import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService } from '../../services/user.Auth.Service.js';
-import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
+import { generateAndSend2FACode, enable2FAService } from '../../services/2FA/twoFactors.service.js';
 
 export const registerUser = async (req, res) => {
   const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
@@ -31,7 +31,7 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     const platform = req.headers['x-platform'] || 'web';
     const dataLogin = await loginUserService(email, password);
-
+    
     if (dataLogin.twoFactorRequired) {
       await generateAndSend2FACode(dataLogin.email, dataLogin.userId);
 
@@ -41,6 +41,7 @@ export const loginUser = async (req, res) => {
         userId: dataLogin.userId,
       });
     }
+
 
     const responseData = { 
       message: 'Inicio de sesión exitoso', 
@@ -90,18 +91,30 @@ export const logoutUser = (req, res) => {
   }
 };
 
+
+export const enableTwoFactor = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await enable2FAService(id);
+    res.status(200).json({ message: '2FA habilitado correctamente' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al habilitar 2FA' });
+  }
+};
+
 export const verify2FACode = async (req, res) => {
   try {
     const { userId, code } = req.body;
     // Plataforma del cliente
     const platform = req.headers['x-platform'] || 'web';
     
-    const token = await userVerifyTwoFactorService(userId, code);
+    const {token, userWithoutPassword} = await userVerifyTwoFactorService(userId, code);
 
     // Respuesta para ambas plataformas
     const responseData = {
       message: '2FA verificado, inicio de sesión exitoso',
-      token: token // Incluir el token para clientes móviles
+      token,
+      user: userWithoutPassword //necesario para front // Incluir el token para clientes móviles
     };
 
     // Para web, también establecemos la cookie
@@ -113,7 +126,7 @@ export const verify2FACode = async (req, res) => {
       });
     }
 
-    res.json(responseData);
+    res.status(200).json(responseData);//mandar datos completos
 
   } catch (err) {
     console.error('Error al verificar 2FA:', err.message);

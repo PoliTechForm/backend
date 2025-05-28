@@ -34,3 +34,15 @@ export const send2FACodeEmail = async (email, code) => {
     throw new Error('No se pudo enviar el código 2FA');
   }
 };
+
+export const enable2FAService = async (userId) => {
+  try {
+    await pool.query(
+      `UPDATE users SET two_factor_enabled = true WHERE id = $1`,
+      [userId]
+    );
+  } catch (error) {
+    console.error('Error al habilitar 2FA en la base de datos:', error.message);
+    throw new Error('No se pudo habilitar 2FA');
+  }
+};

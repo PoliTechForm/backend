@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword } from '../controllers/auth/authController.js';
+import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword, enableTwoFactor } from '../controllers/auth/authController.js';
 import { validarJwt } from '../jwt/validateJwt/validateJwt.js';
 import { validationError } from '../middlewares/validatorResult.js';
 import { validarLogin, validarRegistro } from '../validations/validations.js';
@@ -18,6 +18,8 @@ authRouter.get('/session', validarJwt, getSession)
 
 authRouter.post('/logout',logoutUser)
 
-authRouter.post("/changePassword",validarJwt ,changePassword)
+authRouter.put("/changePassword",validarJwt ,changePassword) //put para reemplazar lo que ya existe en la bd
+authRouter.post('/enable-2fa/:id', enableTwoFactor);
+
 
 export default authRouter;
