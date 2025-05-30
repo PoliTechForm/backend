@@ -185,3 +185,49 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+export const enableOrDisableTwoFactor = async (req, res) => {
+  try {
+    const user = req.user;
+    const { password } = req.body;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'Contraseña requerida' });
+    }
+
+    // Obtener contraseña actual desde DB
+    const result = await pool.query(
+      'SELECT password_hash, two_factor_enabled FROM users WHERE id = $1',
+      [user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const dbUser = result.rows[0];
+
+    const isMatch = await bcrypt.compare(password, dbUser.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    const newStatus = !dbUser.two_factor_enabled;
+
+    await pool.query(
+      'UPDATE users SET two_factor_enabled = $1 WHERE id = $2',
+      [newStatus, user.id]
+    );
+
+    const message = newStatus ? '2FA activado correctamente' : '2FA desactivado correctamente';
+    res.status(200).json({ message });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+
