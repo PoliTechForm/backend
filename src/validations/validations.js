@@ -34,6 +34,42 @@ body("recaptchaToken")
   .withMessage("El token de reCAPTCHA es obligatorio"),
 ];
 
+export const validarRecuperacion = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("El correo electrónico es obligatorio")
+    .isEmail()
+    .withMessage("Debe ser un correo electrónico válido"),
+];
+
+export const validarResetPassword = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("El correo electrónico es obligatorio")
+    .isEmail()
+    .withMessage("Debe ser un correo electrónico válido"),
+
+  body("code")
+    .trim()
+    .notEmpty()
+    .withMessage("El código de verificación es obligatorio"),
+
+  body("newPassword")
+    .trim()
+    .notEmpty()
+    .withMessage("La nueva contraseña es obligatoria")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/)
+    .withMessage({msg: "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y símbolos"})
+    .custom((value) => {
+      if (sqlInjectionPattern.test(value)) {
+        throw new Error("La contraseña contiene patrones inválidos");
+      }
+      return true;
+    }),
+];
+
 
 export const validarLogin = [
   body("email")

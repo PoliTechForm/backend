@@ -1,5 +1,8 @@
-import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService } from '../../services/user.Auth.Service.js';
+import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService, resetPasswordService } from '../../services/user.Auth.Service.js';
 import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
+import pool from '../../dataBase/pool.js';
+import bcrypt from 'bcrypt';
+
 
 export const registerUser = async (req, res) => {
   const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
@@ -29,13 +32,8 @@ export const verifyEmail = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-<<<<<<< HEAD
-    console.log(email, password);
-    const { token, userWithoutPassword } = await loginUserService(email, password);
-=======
     const platform = req.headers['x-platform'] || 'web';
     const dataLogin = await loginUserService(email, password);
->>>>>>> cedce33a7e97bfbf234d5c7d700d4b9754db6e9b
 
     if (dataLogin.twoFactorRequired) {
       await generateAndSend2FACode(dataLogin.email, dataLogin.userId);
@@ -150,3 +148,40 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Se requiere el email' });
+    }
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    const userId = userRes.rows[0].id;
+    await generateAndSend2FACode(email, userId);
+    res.status(200).json({ message: 'Código enviado al correo electrónico' });
+  } catch (err) {
+    console.error('Error al solicitar código de recuperación:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Faltan campos requeridos' });
+    }
+
+    await resetPasswordService(email, code, newPassword);
+
+    res.status(200).json({ message: 'Contraseña restablecida correctamente' });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Error del servidor' });
+  }
+};
+
