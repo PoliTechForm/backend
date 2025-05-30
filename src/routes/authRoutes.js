@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword } from '../controllers/auth/authController.js';
+import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword, forgotPassword, resetPassword } from '../controllers/auth/authController.js';
 import { validarJwt } from '../jwt/validateJwt/validateJwt.js';
 import { validationError } from '../middlewares/validatorResult.js';
-import { validarLogin, validarRegistro } from '../validations/validations.js';
+import { validarLogin, validarRegistro, validarRecuperacion, validarResetPassword } from '../validations/validations.js';
 
 const authRouter = Router();
 
@@ -14,10 +14,14 @@ authRouter.get('/verify', verifyEmail);
 
 authRouter.post('/verifity', verify2FACode);
 
-authRouter.get('/session', validarJwt, getSession)
+authRouter.get('/sessw3aion', validarJwt, getSession)
 
 authRouter.post('/logout',logoutUser)
 
 authRouter.post("/changePassword",validarJwt ,changePassword)
+
+authRouter.post("/forgotPassword", validarRecuperacion, validationError, forgotPassword);
+
+authRouter.post("/resetPassword", validarResetPassword, validationError, resetPassword);
 
 export default authRouter;
