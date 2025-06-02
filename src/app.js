@@ -3,6 +3,9 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import authRouter from './routes/authRoutes.js';
+import userRoute from './routes/userRoutes.js';
+import errorHandler  from './middlewares/errorHandler.js';
 const app = express()
 app.use(cors({
     origin: [
