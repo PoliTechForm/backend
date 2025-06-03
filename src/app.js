@@ -16,7 +16,7 @@ app.use(cors({
     origin: [
         "http://127.0.0.1:5500", 
         "http://localhost:5173",
-        "http://          :4000", // Ajusta esta IP, es la misma que el ipv del ipconfig
+        "http://192.168.1.4:19000", // Ajusta esta IP
         "http://localhost:19000"
     ],
     credentials: true

@@ -1,5 +1,8 @@
-import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService } from '../../services/user.Auth.Service.js';
-import { generateAndSend2FACode, enable2FAService } from '../../services/2FA/twoFactors.service.js';
+import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService, resetPasswordService } from '../../services/user.Auth.Service.js';
+import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
+import pool from '../../dataBase/pool.js';
+import bcrypt from 'bcrypt';
+
 
 export const registerUser = async (req, res) => {
   const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
@@ -91,17 +94,6 @@ export const logoutUser = (req, res) => {
   }
 };
 
-
-export const enableTwoFactor = async (req, res) => {
-  const { id } = req.params;
-  try {
-    await enable2FAService(id);
-    res.status(200).json({ message: '2FA habilitado correctamente' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al habilitar 2FA' });
-  }
-};
-
 export const verify2FACode = async (req, res) => {
   try {
     const { userId, code } = req.body;
@@ -158,3 +150,86 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Se requiere el email' });
+    }
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    const userId = userRes.rows[0].id;
+    await generateAndSend2FACode(email, userId);
+    res.status(200).json({ message: 'Código enviado al correo electrónico' });
+  } catch (err) {
+    console.error('Error al solicitar código de recuperación:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Faltan campos requeridos' });
+    }
+
+    await resetPasswordService(email, code, newPassword);
+
+    res.status(200).json({ message: 'Contraseña restablecida correctamente' });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Error del servidor' });
+  }
+};
+
+export const enableOrDisableTwoFactor = async (req, res) => {
+  try {
+    const user = req.user;
+    const { password } = req.body;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'Contraseña requerida' });
+    }
+
+    // Obtener contraseña actual desde DB
+    const result = await pool.query(
+      'SELECT password_hash, two_factor_enabled FROM users WHERE id = $1',
+      [user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const dbUser = result.rows[0];
+
+    const isMatch = await bcrypt.compare(password, dbUser.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    const newStatus = !dbUser.two_factor_enabled;
+
+    await pool.query(
+      'UPDATE users SET two_factor_enabled = $1 WHERE id = $2',
+      [newStatus, user.id]
+    );
+
+    const message = newStatus ? '2FA activado correctamente' : '2FA desactivado correctamente';
+    res.status(200).json({ message });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+

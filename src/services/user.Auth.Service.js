@@ -176,3 +176,40 @@ export const changeUserPasswordService = async (userId, currentPassword, newPass
     await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newPasswordHash, userId]);
 }
 
+export const resetPasswordService = async (email, code, newPassword) => {
+  const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (userRes.rows.length === 0) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const userId = userRes.rows[0].id;
+
+  // Verificar código 2FA
+  const codeRes = await pool.query(
+    `SELECT * FROM login_tokens
+     WHERE user_id = $1 AND token = $2 AND expires_at > now()`,
+    [userId, code]
+  );
+
+  if (codeRes.rows.length === 0) {
+    throw new Error('Código 2FA inválido o expirado');
+  }
+
+  // Eliminar token usado
+  await pool.query(
+    `DELETE FROM login_tokens WHERE user_id = $1 AND token = $2`,
+    [userId, code]
+  );
+
+  // Hashear y guardar nueva contraseña
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  await pool.query(
+    `UPDATE users SET password_hash = $1 WHERE id = $2`,
+    [hashedPassword, userId]
+  );
+};
+
+
+
