@@ -231,5 +231,51 @@ export const enableOrDisableTwoFactor = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
+// En authController.js - Función getUserProfile corregida
+export const getUserProfile = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const result = await pool.query(
+      `SELECT 
+         id, 
+         nombre, 
+         email, 
+         role_id, 
+         estado_cuenta AS estado, 
+         fecha_creacion AS created_at, 
+         two_factor_enabled 
+       FROM users WHERE id = $1`, // ← Agregué las comillas faltantes
+      [userId]
+    );
 
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
 
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al obtener perfil' });
+  }
+};
+// PUT /users/update-name
+export const updateUserName = async (req, res) => {
+  const userId = req.user.id;
+  const { nombre } = req.body;
+
+  if (!nombre || nombre.trim() === "") {
+    return res.status(400).json({ error: 'El nuevo nombre no puede estar vacío' });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE users SET nombre = $1 WHERE id = $2',
+      [nombre, userId]
+    );
+
+    res.json({ message: 'Nombre actualizado con éxito' });
+  } catch (err) {
+    console.error('Error al actualizar el nombre:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
