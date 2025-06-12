@@ -1,11 +1,13 @@
 import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService, resetPasswordService } from '../../services/user.Auth.Service.js';
 import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
+import {login_metrics} from '../../services/recolectarMetricas/collectMetrics.Service.js';
 import pool from '../../dataBase/pool.js';
 import bcrypt from 'bcrypt';
 
 
 export const registerUser = async (req, res) => {
   const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
+  console.log(nombre, email, recaptchaToken );
 
   try {
     await registerUserService(nombre, email, password, role, recaptchaToken);
@@ -37,13 +39,18 @@ export const loginUser = async (req, res) => {
 
     if (dataLogin.twoFactorRequired) {
       await generateAndSend2FACode(dataLogin.email, dataLogin.userId);
-
+      
       return res.status(200).json({
         message: 'Se requiere código 2FA',
         twoFactorRequired: true,
         userId: dataLogin.userId,
       });
     }
+    
+    console.log('dataLogin en loginUser:', dataLogin);
+
+    //Recolecta métricas de inicios de sesión
+    await login_metrics(dataLogin.userWithoutPassword.id, platform, true);
 
     const responseData = { 
       message: 'Inicio de sesión exitoso', 
@@ -62,6 +69,7 @@ export const loginUser = async (req, res) => {
     res.json(responseData);
 
   } catch (err) {
+    await login_metrics(userId = null, platform, false);
     console.error('Error en el inicio de sesión:', err.message);
     res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
   }

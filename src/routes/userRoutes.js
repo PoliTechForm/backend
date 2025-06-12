@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { getUsers } from "../controllers/ciudadano/dashboard.controller.js";
+import { getEmployeesAndCitizens } from "../controllers/generalControllers/employeeAdminControllers.js";
 
 const userRoute = Router()
 
-userRoute.get("/users", getUsers)
+//! PERMITE AL ADMINISTRADOR Y AL EMPLEADO VER TODOS LOS USUARIOS
+
+userRoute.get("/users", getEmployeesAndCitizens)
 
 export default userRoute

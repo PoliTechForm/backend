@@ -12,9 +12,8 @@ const pool = new Pool({
   database: DB_DATABASE,
   password: DB_PASSWORD,
   port: DB_PORT,
-  ssl: {
-    rejectUnauthorized: false, // Deshabilitar la validación SSL si es necesario
-  },
+  //! Volver a poner la configuración de ssl, yo lo cambié para conectarlo con mi db local
+  ssl: false,
 });
 
 export default pool;
