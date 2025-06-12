@@ -12,9 +12,7 @@ const pool = new Pool({
   database: DB_DATABASE,
   password: DB_PASSWORD,
   port: DB_PORT,
-  ssl: {
-    rejectUnauthorized: false, // Deshabilitar la validación SSL si es necesario
-  },
+  ssl: process.env.DB_SSL === 'true',
 });
 
 export default pool;
