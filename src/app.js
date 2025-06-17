@@ -20,7 +20,7 @@ app.use(cors({
         "http://127.0.0.1:5500",
         "http://localhost:5173",
         "http://192.168.0.155:19000", // Ajusta esta IP
-        "http://localhost:19000"
+        "http://localhost:19000",
     ],
     credentials: true
 }));

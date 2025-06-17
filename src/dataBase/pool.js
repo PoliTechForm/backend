@@ -12,8 +12,7 @@ const pool = new Pool({
   database: DB_DATABASE,
   password: DB_PASSWORD,
   port: DB_PORT,
-  //! Volver a poner la configuración de ssl, yo lo cambié para conectarlo con mi db local
-  ssl:  ,
+  ssl: process.env.DB_SSL === 'true',
 });
 
 export default pool;
