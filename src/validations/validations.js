@@ -10,6 +10,13 @@ export const validarRegistro = [
     .matches(/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ0-9]+$/)
     .withMessage("El nombre contiene caracteres no permitidos"),
 
+  body("dni")
+    .trim()
+    .notEmpty()
+    .withMessage("El DNI no debe estar vacío")
+    .matches(/^[0-9]+$/)
+    .withMessage("El DNI debe contener solo números"),
+
   body("email")
     .trim()
     .notEmpty()
