@@ -1,16 +1,15 @@
 import { registerUserService, userVerifyEmail, loginUserService, userVerifyTwoFactorService, changeUserPasswordService, resetPasswordService } from '../../services/user.Auth.Service.js';
 import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js';
-import {login_metrics} from '../../services/recolectarMetricas/collectMetrics.Service.js';
+import { login_metrics } from '../../services/recolectarMetricas/collectMetrics.Service.js';
 import pool from '../../dataBase/pool.js';
 import bcrypt from 'bcrypt';
 
 
 export const registerUser = async (req, res) => {
-  const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
-  console.log(nombre, email, recaptchaToken );
+  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken } = req.body;
 
   try {
-    await registerUserService(nombre, email, password, role, recaptchaToken);
+    await registerUserService(nombre, dni, email, password, role, recaptchaToken);
     res.status(201).json({
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });
@@ -38,24 +37,31 @@ export const loginUser = async (req, res) => {
     const dataLogin = await loginUserService(email, password);
 
     if (dataLogin.twoFactorRequired) {
+      // Validar que userId existe
+      if (!dataLogin.userId) {
+        return res.status(500).json({
+          error: 'Error del servidor: userId no generado para 2FA',
+        });
+      }
       await generateAndSend2FACode(dataLogin.email, dataLogin.userId);
-      
+
       return res.status(200).json({
         message: 'Se requiere código 2FA',
         twoFactorRequired: true,
         userId: dataLogin.userId,
       });
     }
-    
+    // ... resto del código
+
     console.log('dataLogin en loginUser:', dataLogin);
 
     //Recolecta métricas de inicios de sesión
     await login_metrics(dataLogin.userWithoutPassword.id, platform, true);
 
-    const responseData = { 
-      message: 'Inicio de sesión exitoso', 
+    const responseData = {
+      message: 'Inicio de sesión exitoso',
       user: dataLogin.userWithoutPassword,
-      token: dataLogin.token 
+      token: dataLogin.token
     };
 
     if (platform === 'web') {
@@ -78,7 +84,7 @@ export const loginUser = async (req, res) => {
 export const getSession = (req, res) => {
   try {
     const user = req.user
-    return res.status(200).json({msg:"Te haz autenticado", User: user});
+    return res.status(200).json({ msg: "Te haz autenticado", User: user });
   } catch (error) {
     return res.status(500).json({ msg: "Hubo un error inesperado." });
   }
@@ -88,14 +94,14 @@ export const logoutUser = (req, res) => {
   try {
     // Plataforma del cliente
     const platform = req.headers['x-platform'] || 'web';
-    
+
     // Para web, nv la cookie
     if (platform === 'web') {
       res.clearCookie("token");
     }
-    
+
     // Para ambas plataformas, enviamos confirmación
-    res.status(200).json({msg: "Cierre de sesión exitoso"})
+    res.status(200).json({ msg: "Cierre de sesión exitoso" })
   } catch (error) {
     res.status(400).json("Hubo un error inesperado.")
   }
@@ -106,7 +112,7 @@ export const verify2FACode = async (req, res) => {
     const { userId, code } = req.body;
     // Plataforma del cliente
     const platform = req.headers['x-platform'] || 'web';
-    
+
     const token = await userVerifyTwoFactorService(userId, code);
 
     // Respuesta para ambas plataformas
@@ -142,7 +148,7 @@ export const changePassword = async (req, res) => {
   } catch (error) {
     console.error('Error al cambiar la contraseña:', error);
 
-  // Con esto brindaremos la respuesta a los errores del servicio
+    // Con esto brindaremos la respuesta a los errores del servicio
     if (error.message === 'Usuario no encontrado') {
       return res.status(404).json({ error: error.message });
     }

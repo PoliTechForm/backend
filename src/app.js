@@ -9,6 +9,7 @@ import { employeeRoute } from './routes/employeeRoutes.js';
 import errorHandler from './middlewares/errorHandler.js';
 import { employeeAdminRoute } from './routes/employeeAdminRoutes.js';
 import { adminRoute } from './routes/adminRoutes.js';
+import { metricRoutes } from './routes/dashboardRoute.js';
 
 const app = express();
 
@@ -35,6 +36,8 @@ app.use('/admin', adminRoute)
 app.use('/employee', employeeRoute)
 //! funciones conjuntas de empleado y administrador
 app.use('/employee-Admin', employeeAdminRoute)
+//! Metricas
+app.use('/metricas', metricRoutes)
 
 app.use(errorHandler);
 
