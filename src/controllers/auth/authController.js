@@ -31,9 +31,10 @@ export const verifyEmail = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
+  const platform = req.headers['x-platform'] || 'web';
+
   try {
     const { email, password } = req.body;
-    const platform = req.headers['x-platform'] || 'web';
     const dataLogin = await loginUserService(email, password);
 
     if (dataLogin.twoFactorRequired) {
@@ -75,7 +76,7 @@ export const loginUser = async (req, res) => {
     res.json(responseData);
 
   } catch (err) {
-    await login_metrics(userId = null, platform, false);
+    await login_metrics(null, platform, false);
     console.error('Error en el inicio de sesión:', err.message);
     res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
   }
