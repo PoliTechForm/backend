@@ -6,15 +6,6 @@ dotenv.config();
 
 const { Pool } = pkg;
 
-// Debug: Verificar que las variables de entorno se cargan correctamente
-console.log('DB Config:', {
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD ? '***' : 'undefined',
-  port: process.env.DB_PORT,
-  ssl: process.env.DB_SSL
-});
 
 // Configurar el pool de conexiones con las variables de entorno
 const pool = new Pool({

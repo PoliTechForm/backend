@@ -7,6 +7,7 @@ import bcrypt from 'bcrypt';
 
 export const registerUser = async (req, res) => {
   const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken } = req.body;
+  console.log('DNI recibido en backend:', dni, typeof dni);
 
   try {
     await registerUserService(nombre, dni, email, password, role, recaptchaToken);
@@ -14,7 +15,7 @@ export const registerUser = async (req, res) => {
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });
   } catch (err) {
-    console.error('Error en el registro:', err.message);
+    console.error('Error en el registro:', err.message, err);
     res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
   }
 };
@@ -242,6 +243,53 @@ export const enableOrDisableTwoFactor = async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+// Actualizar perfil del usuario autenticado
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { nombre, ubicacion, sexo } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Validar que al menos un campo se envía
+    if (!nombre && !ubicacion && !sexo) {
+      return res.status(400).json({ error: 'No se enviaron campos para actualizar' });
+    }
+
+    // Construir query dinámico
+    const updates = [];
+    const values = [];
+    let count = 1;
+    if (nombre) {
+      updates.push(`nombre = $${count++}`);
+      values.push(nombre);
+    }
+    if (ubicacion) {
+      updates.push(`ubicacion = $${count++}`);
+      values.push(ubicacion);
+    }
+    if (sexo) {
+      updates.push(`sexo = $${count++}`);
+      values.push(sexo);
+    }
+    values.push(userId);
+
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${count} RETURNING id, nombre, ubicacion, sexo, email, dni, role_id`;
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.status(200).json({ message: 'Perfil actualizado exitosamente', user: result.rows[0] });
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error);
+    return res.status(500).json({ error: 'Error del servidor' });
   }
 };
 
