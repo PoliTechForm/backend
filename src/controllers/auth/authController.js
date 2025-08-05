@@ -255,6 +255,32 @@ export const enableOrDisableTwoFactor = async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
+// Obtener perfil del usuario autenticado
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = req.user; // asumimos que validarJwt ya lo coloca
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    res.status(200).json({
+      message: 'Perfil del usuario',
+      user: {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        dni: user.dni,
+        role: user.role,
+        ubicacion: user.ubicacion,
+        sexo: user.sexo
+      }
+    });
+  } catch (error) {
+    console.error('Error al obtener el perfil del usuario:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
 
 // Actualizar perfil del usuario autenticado
 export const updateProfile = async (req, res) => {
