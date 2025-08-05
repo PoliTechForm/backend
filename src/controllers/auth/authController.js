@@ -6,11 +6,10 @@ import bcrypt from 'bcrypt';
 
 
 export const registerUser = async (req, res) => {
-  const { nombre, email, password, role = 'ciudadano', recaptchaToken } = req.body;
-  console.log(nombre, email, recaptchaToken );
+  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken } = req.body;
 
   try {
-    await registerUserService(nombre, email, password, role, recaptchaToken);
+    await registerUserService(nombre, dni, email, password, role, recaptchaToken);
     res.status(201).json({
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });
