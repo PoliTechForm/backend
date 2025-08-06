@@ -6,16 +6,16 @@ import bcrypt from 'bcrypt';
 
 
 export const registerUser = async (req, res) => {
-  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken } = req.body;
-  console.log('DNI recibido en backend:', dni, typeof dni);
+  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken, sexo, ubicacion } = req.body;
+  console.log('Datos recibidos:', { nombre, dni, email, sexo, ubicacion });
 
   try {
-    await registerUserService(nombre, dni, email, password, role, recaptchaToken);
+    await registerUserService(nombre, dni, email, password, role, recaptchaToken, sexo, ubicacion);
     res.status(201).json({
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });
     if (dni === null || dni === undefined || dni === '') {
-      res.status(201).json({
+      res.status(201).json({ 
         message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
       });
     }
@@ -257,76 +257,68 @@ export const enableOrDisableTwoFactor = async (req, res) => {
 };
 // Obtener perfil del usuario autenticado
 export const getUserProfile = async (req, res) => {
+  const userId = req.user.id;
   try {
-    const user = req.user; // asumimos que validarJwt ya lo coloca
+    const result = await pool.query(
+      `SELECT 
+         id, 
+         nombre, 
+         dni,
+         email, 
+         role_id, 
+         estado_cuenta AS estado, 
+         fecha_creacion AS created_at, 
+         two_factor_enabled, sexo, ubicacion
+       FROM users WHERE id = $1`,
+      [userId]
+    );
 
-    if (!user) {
-      return res.status(401).json({ error: 'Usuario no autenticado' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    res.status(200).json({
-      message: 'Perfil del usuario',
-      user: {
-        id: user.id,
-        nombre: user.nombre,
-        email: user.email,
-        dni: user.dni,
-        role: user.role,
-        ubicacion: user.ubicacion,
-        sexo: user.sexo
-      }
-    });
+    res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error al obtener el perfil del usuario:', error);
+    console.error(error);
+    res.status(500).json({ message: 'Error al obtener perfil' });
+  }
+};
+//actualiza datos del perfil de usuario
+export const updateUserProfile = async (req, res) => {
+  const userId = req.user.id;
+  const { nombre, ubicacion } = req.body;
+  const updates = [];
+  const values = [];
+  let paramIndex = 1;
+
+  if (nombre) {
+    if (nombre.trim() === "") {
+      return res.status(400).json({ error: 'El nombre no puede estar vacío' });
+    }
+    updates.push(`nombre = $${paramIndex++}`);
+    values.push(nombre);
+  }
+
+  if (ubicacion) {
+    if (ubicacion.trim() === "") {
+      return res.status(400).json({ error: 'La ubicación no puede estar vacía' });
+    }
+    updates.push(`ubicacion = $${paramIndex++}`);
+    values.push(ubicacion);
+  }
+  
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No se proporcionaron datos para actualizar' });
+  }
+
+  values.push(userId);
+  const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+
+  try {
+    await pool.query(query, values);
+    res.json({ message: 'Perfil actualizado con éxito' });
+  } catch (err) {
+    console.error('Error al actualizar el perfil:', err);
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
-
-// Actualizar perfil del usuario autenticado
-export const updateProfile = async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const { nombre, ubicacion, sexo } = req.body;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuario no autenticado' });
-    }
-
-    // Validar que al menos un campo se envía
-    if (!nombre && !ubicacion && !sexo) {
-      return res.status(400).json({ error: 'No se enviaron campos para actualizar' });
-    }
-
-    // Construir query dinámico
-    const updates = [];
-    const values = [];
-    let count = 1;
-    if (nombre) {
-      updates.push(`nombre = $${count++}`);
-      values.push(nombre);
-    }
-    if (ubicacion) {
-      updates.push(`ubicacion = $${count++}`);
-      values.push(ubicacion);
-    }
-    if (sexo) {
-      updates.push(`sexo = $${count++}`);
-      values.push(sexo);
-    }
-    values.push(userId);
-
-    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${count} RETURNING id, nombre, ubicacion, sexo, email, dni, role_id`;
-    const result = await pool.query(query, values);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    return res.status(200).json({ message: 'Perfil actualizado exitosamente', user: result.rows[0] });
-  } catch (error) {
-    console.error('Error al actualizar perfil:', error);
-    return res.status(500).json({ error: 'Error del servidor' });
-  }
-};
-
-

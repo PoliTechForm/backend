@@ -6,7 +6,7 @@ import axios from 'axios';
 import pool from "../dataBase/pool.js";
 import { createJwt } from "../jwt/createJwt/createJwt.js";
 
-export const registerUserService = async (nombre, dni, email, password, role = "ciudadano", recaptchaToken) => {
+export const registerUserService = async (nombre, dni, email, password, role = "ciudadano", recaptchaToken, sexo, ubicacion) => {
   // Verificar captcha
   const captchaResponse = await axios.post(
     'https://www.google.com/recaptcha/api/siteverify',
@@ -50,9 +50,9 @@ export const registerUserService = async (nombre, dni, email, password, role = "
   // Crear el usuario
   const userId = uuidv4();
   await pool.query(
-    `INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email)
-     VALUES ($1, $2, $3, $4, $5, $6, false)`,
-    [userId, nombre, dni, email, passwordHash, roleId]
+    `INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email, sexo, ubicacion)
+     VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)`,
+    [userId, nombre, dni, email, passwordHash, roleId, sexo, ubicacion]
   );
 
   // Enviar el correo de verificación

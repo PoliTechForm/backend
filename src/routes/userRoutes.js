@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getEmployeesAndCitizens } from "../controllers/generalControllers/employeeAdminControllers.js";
-import { getUserProfile, updateProfile } from "../controllers/auth/authController.js";
+import { getUserProfile, updateUserProfile } from "../controllers/auth/authController.js";
 import { validarJwt } from "../jwt/validateJwt/validateJwt.js"; 
 
 const userRoute = Router();
@@ -10,6 +10,6 @@ userRoute.get("/users", getEmployeesAndCitizens);
 
 // Rutas protegidas
 userRoute.get("/profile", validarJwt, getUserProfile); // Ver perfil
-userRoute.put("/update", validarJwt, updateProfile);   // Actualizar perfil
+userRoute.put("/update-profile", validarJwt, updateUserProfile);   // Actualizar perfil
 
 export default userRoute;
