@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword, forgotPassword, resetPassword, enableOrDisableTwoFactor } from '../controllers/auth/authController.js';
+import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword, forgotPassword, resetPassword, enableOrDisableTwoFactor, getLocations } from '../controllers/auth/authController.js';
 import { validarJwt } from '../jwt/validateJwt/validateJwt.js';
 import { validationError } from '../middlewares/validatorResult.js';
 import { validarLogin, validarRegistro, validarRecuperacion, validarResetPassword } from '../validations/validations.js';
@@ -26,4 +26,5 @@ authRouter.post("/resetPassword", validarResetPassword, validationError, resetPa
 
 authRouter.post("/enableDisable2fa", validarJwt, enableOrDisableTwoFactor )
 
+authRouter.get('/locations', getLocations); // localidades
 export default authRouter;

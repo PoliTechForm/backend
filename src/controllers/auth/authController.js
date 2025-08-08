@@ -3,30 +3,35 @@ import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js
 import { login_metrics } from '../../services/recolectarMetricas/collectMetrics.Service.js';
 import pool from '../../dataBase/pool.js';
 import bcrypt from 'bcrypt';
-
-
-export const registerUser = async (req, res) => {
-  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken, sexo, ubicacion } = req.body;
-  console.log('Datos recibidos:', { nombre, dni, email, sexo, ubicacion });
+export const registerUser = async (req, res, next) => {
+  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken, sexo, location_id } = req.body;
+  console.log('Datos recibidos:', { nombre, dni, email, sexo, location_id });
 
   try {
-    await registerUserService(nombre, dni, email, password, role, recaptchaToken, sexo, ubicacion);
-    res.status(201).json({
-      message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
-    });
-    if (dni === null || dni === undefined || dni === '') {
-      res.status(201).json({ 
-        message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
-      });
+    // Validación preliminar para dni (opcional, según requisitos)
+    if (!dni) {
+      return res.status(400).json({ error: 'El DNI es obligatorio' });
     }
-    if (pool.some((dni) => dni === dni)) {
+
+    // Validar si DNI ya está registrado:
+    const dniExistsResult = await pool.query('SELECT id FROM users WHERE dni = $1', [dni]);
+    if (dniExistsResult.rows.length > 0) {
       return res.status(400).json({ error: 'El DNI ya está registrado' });
     }
+
+    // Registrar usuario
+    await registerUserService(nombre, dni, email, password, role, recaptchaToken, sexo, location_id);
+
+    return res.status(201).json({
+      message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
+    });
+
   } catch (err) {
     console.error('Error en el registro:', err.message, err);
-    res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
+    return res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
   }
 };
+
 
 export const verifyEmail = async (req, res) => {
   const { token } = req.query;
@@ -210,6 +215,16 @@ export const resetPassword = async (req, res) => {
     res.status(400).json({ error: err.message || 'Error del servidor' });
   }
 };
+//localidades
+export const getLocations = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, localidad FROM locations ORDER BY localidad ASC');
+    res.json({ locations: result.rows });  // <-- enviar dentro de un objeto con clave locations
+  } catch (err) {
+    console.error('Error obteniendo localidades:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
 
 export const enableOrDisableTwoFactor = async (req, res) => {
   try {
@@ -254,8 +269,7 @@ export const enableOrDisableTwoFactor = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
   }
-};
-// Obtener perfil del usuario autenticado
+};// Obtener perfil del usuario autenticado
 export const getUserProfile = async (req, res) => {
   const userId = req.user.id;
   try {
@@ -268,7 +282,9 @@ export const getUserProfile = async (req, res) => {
          role_id, 
          estado_cuenta AS estado, 
          fecha_creacion AS created_at, 
-         two_factor_enabled, sexo, ubicacion
+         two_factor_enabled, 
+         sexo, 
+         location_id
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -283,15 +299,17 @@ export const getUserProfile = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener perfil' });
   }
 };
-//actualiza datos del perfil de usuario
+
+// Actualizar datos del perfil de usuario
 export const updateUserProfile = async (req, res) => {
   const userId = req.user.id;
-  const { nombre, ubicacion } = req.body;
+  const { nombre, location_id } = req.body;  // Aquí la propiedad debe ser location_id
+
   const updates = [];
   const values = [];
   let paramIndex = 1;
 
-  if (nombre) {
+  if (nombre !== undefined) {
     if (nombre.trim() === "") {
       return res.status(400).json({ error: 'El nombre no puede estar vacío' });
     }
@@ -299,14 +317,16 @@ export const updateUserProfile = async (req, res) => {
     values.push(nombre);
   }
 
-  if (ubicacion) {
-    if (ubicacion.trim() === "") {
-      return res.status(400).json({ error: 'La ubicación no puede estar vacía' });
+  if (location_id !== undefined) {
+    // Opcional: validar que location_id no sea vacío (si quieres permitir quitar ubicación, ajustar)
+    if (location_id === null || location_id === '') {
+      updates.push(`location_id = NULL`);
+    } else {
+      updates.push(`location_id = $${paramIndex++}`);
+      values.push(location_id);
     }
-    updates.push(`ubicacion = $${paramIndex++}`);
-    values.push(ubicacion);
   }
-  
+
   if (updates.length === 0) {
     return res.status(400).json({ error: 'No se proporcionaron datos para actualizar' });
   }
