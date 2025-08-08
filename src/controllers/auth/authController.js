@@ -14,16 +14,9 @@ export const registerUser = async (req, res) => {
     res.status(201).json({
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });
-    if (dni === null || dni === undefined || dni === '') {
-      res.status(201).json({
-        message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
-      });
-    }
-    if (pool.some((dni) => dni === dni)) {
-      return res.status(400).json({ error: 'El DNI ya está registrado' });
-    }
   } catch (err) {
-    console.error('Error en el registro:', err.message, err);
+    console.error('Registration error:', err);
+    console.log('Registration error details:', err.message);
     res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
   }
 };
