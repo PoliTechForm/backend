@@ -167,17 +167,26 @@ export const updateInfoUserService = async (
 };
 
 export const deleteUserService = async (id) => {
-    if(!id){
-        const error = new Error("Id de usuario no proporcionado.");
-        error.status = 400;
-        throw error;
-        }
-    const result = await pool.query('DELETE FROM public.users WHERE id = $1', [id])
-        if(result.rowCount === 0) {
-    const error = new Error("El usuario con esa id no fue encontrado.");
-        error.status = 404;
-        throw error;
-        }    
-}
+  if (!id) {
+    const error = new Error("Id de usuario no proporcionado.");
+    error.status = 400;
+    throw error;
+  }
+
+  try {
+    const result = await pool.query('DELETE FROM public.users WHERE id = $1', [id]);
+
+    if (result.rowCount === 0) {
+      const error = new Error("El usuario con esa id no fue encontrado.");
+      error.status = 404;
+      throw error;
+    }
+  } catch (err) {
+    console.error('Error en deleteUserService:', err);
+    // Puedes lanzar un error personalizado o el mismo error:
+    throw err;
+  }
+};
+
 
 
