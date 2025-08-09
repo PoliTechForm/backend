@@ -167,26 +167,103 @@ export const updateInfoUserService = async (
 };
 
 export const deleteUserService = async (id) => {
+    if(!id){
+        const error = new Error("Id de usuario no proporcionado.");
+        error.status = 400;
+        throw error;
+        }
+    const result = await pool.query('DELETE FROM public.users WHERE id = $1', [id])
+        if(result.rowCount === 0) {
+    const error = new Error("El usuario con esa id no fue encontrado.");
+        error.status = 404;
+        throw error;
+        }    
+}
+
+export const updateEmployeeUserService = async (userRequester, id, { nombre, email, dni, password, role_id }) => {
   if (!id) {
-    const error = new Error("Id de usuario no proporcionado.");
-    error.status = 400;
+    const error = new Error("ID no encontrado");
+    error.statusCode = 400;
     throw error;
   }
 
-  try {
-    const result = await pool.query('DELETE FROM public.users WHERE id = $1', [id]);
+  const userToUpdateResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+  if (userToUpdateResult.rows.length === 0) {
+    const error = new Error("Usuario no encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+  const userToUpdate = userToUpdateResult.rows[0];
 
-    if (result.rowCount === 0) {
-      const error = new Error("El usuario con esa id no fue encontrado.");
-      error.status = 404;
+  if (dni && dni !== userToUpdate.dni) {
+    const dniCheck = await pool.query('SELECT id FROM users WHERE dni = $1 AND id != $2', [dni, id]);
+    if (dniCheck.rows.length > 0) {
+      const error = new Error("El DNI ya está registrado en otro usuario");
+      error.statusCode = 409;
       throw error;
     }
-  } catch (err) {
-    console.error('Error en deleteUserService:', err);
-    // Puedes lanzar un error personalizado o el mismo error:
-    throw err;
   }
-};
 
+  if (email && email !== userToUpdate.email) {
+    const emailCheck = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
+    if (emailCheck.rows.length > 0) {
+      const error = new Error("El correo electrónico ya está registrado en otro usuario");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  let updates = [];
+  let values = [];
+  let count = 1;
+
+  const isAdmin = userRequester.role_id === 'ab600be8-4a3a-4b97-a5cb-45ae1c41701a';
+
+  if (nombre) {
+    updates.push(`nombre = $${count++}`);
+    values.push(nombre);
+  }
+  if (email) {
+    updates.push(`email = $${count++}`);
+    values.push(email);
+  }
+  if (dni !== undefined) {
+    updates.push(`dni = $${count++}`);
+    values.push(dni);
+  }
+  if (password) {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    updates.push(`password_hash = $${count++}`);
+    values.push(hashedPassword);
+  }
+  if (role_id && isAdmin) {
+    const roleCheck = await pool.query('SELECT id FROM roles WHERE id = $1', [role_id]);
+    if (roleCheck.rows.length === 0) {
+      const error = new Error("Rol no válido");
+      error.statusCode = 404;
+      throw error;
+    }
+    updates.push(`role_id = $${count++}`);
+    values.push(role_id);
+  }
+  if (updates.length === 0) {
+    const error = new Error("No se proporcionaron campos para actualizar");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  values.push(id);
+
+  const query = `
+    UPDATE users
+    SET ${updates.join(', ')}
+    WHERE id = $${count}
+  `;
+
+  await pool.query(query, values);
+
+  return "Usuario actualizado exitosamente";
+};
 
 
