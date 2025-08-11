@@ -249,6 +249,8 @@ export const enableOrDisableTwoFactor = async (req, res) => {
 
 // Actualizar perfil del usuario autenticado
 export const updateProfile = async (req, res) => {
+  console.log('updateProfile body:', req.body);
+  console.log('updateProfile user:', req.user);
   try {
     const userId = req.user?.id;
     const { nombre, ubicacion, sexo } = req.body;
