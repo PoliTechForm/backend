@@ -129,7 +129,7 @@ export const verify2FACode = async (req, res) => {
     // Plataforma del cliente
     const platform = req.headers['x-platform'] || 'web';
 
-    const token = await userVerifyTwoFactorService(userId, code);
+ const { token, userWithoutPassword } = await userVerifyTwoFactorService(userId, code);
 
     // Respuesta para ambas plataformas
     const responseData = {
