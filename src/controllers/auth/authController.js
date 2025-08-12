@@ -248,50 +248,108 @@ export const enableOrDisableTwoFactor = async (req, res) => {
 };
 
 // Actualizar perfil del usuario autenticado
+// Actualizar perfil del usuario autenticado
+// Actualizar perfil del usuario autenticado
 export const updateProfile = async (req, res) => {
   console.log('updateProfile body:', req.body);
   console.log('updateProfile user:', req.user);
+
   try {
     const userId = req.user?.id;
-    const { nombre, ubicacion, sexo } = req.body;
+    const { nombre, sexo, dni, location_id } = req.body; // Ahora recibimos directamente el ID de la ubicación
 
     if (!userId) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
-    // Validar que al menos un campo se envía
-    if (!nombre && !ubicacion && !sexo) {
+    // Validar que al menos un campo venga
+    if (!nombre && !sexo && !dni && !location_id) {
       return res.status(400).json({ error: 'No se enviaron campos para actualizar' });
     }
 
-    // Construir query dinámico
     const updates = [];
     const values = [];
     let count = 1;
+
     if (nombre) {
       updates.push(`nombre = $${count++}`);
       values.push(nombre);
-    }
-    if (ubicacion) {
-      updates.push(`ubicacion = $${count++}`);
-      values.push(ubicacion);
     }
     if (sexo) {
       updates.push(`sexo = $${count++}`);
       values.push(sexo);
     }
+    if (dni) {
+      updates.push(`dni = $${count++}`);
+      values.push(dni);
+    }
+    if (location_id) {
+      // Verificar que la ubicación exista en locations
+      const checkLoc = await pool.query(
+        'SELECT id FROM locations WHERE id = $1',
+        [location_id]
+      );
+      if (checkLoc.rows.length === 0) {
+        return res.status(400).json({ error: 'La ubicación seleccionada no existe' });
+      }
+
+      updates.push(`location_id = $${count++}`);
+      values.push(location_id);
+    }
+
     values.push(userId);
 
-    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${count} RETURNING id, nombre, ubicacion, sexo, email, dni, role_id`;
+    const query = `
+      UPDATE users
+      SET ${updates.join(', ')}
+      WHERE id = $${count}
+      RETURNING id, nombre, sexo, dni, email, location_id
+    `;
+    console.log('Executing query:', query);
+    console.log('With values:', values);
+
     const result = await pool.query(query, values);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    return res.status(200).json({ message: 'Perfil actualizado exitosamente', user: result.rows[0] });
+    return res.status(200).json({
+      message: 'Perfil actualizado exitosamente',
+      user: result.rows[0]
+    });
+
   } catch (error) {
     console.error('Error al actualizar perfil:', error);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+
+
+// Obtener ubicaciones disponibles en la base de datos
+export const getUbicaciones = async (req, res) => {
+  try {
+    const query = `
+      SELECT id, localidad, departamento, provincia 
+      FROM locations 
+      ORDER BY provincia ASC, departamento ASC, localidad ASC
+    `;
+    
+    const result = await pool.query(query);
+    
+    // Formatear las ubicaciones para mostrar: "localidad, departamento, provincia"
+    const ubicaciones = result.rows.map(row => ({
+      id: row.id,
+      display: `${row.localidad}, ${row.departamento}, ${row.provincia}`,
+      localidad: row.localidad,
+      departamento: row.departamento,
+      provincia: row.provincia
+    }));
+    
+    return res.status(200).json({ ubicaciones });
+  } catch (error) {
+    console.error('Error al obtener ubicaciones:', error);
     return res.status(500).json({ error: 'Error del servidor' });
   }
 };
