@@ -325,6 +325,35 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+export const getProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const query = `
+      SELECT u.id, u.nombre, u.sexo, u.dni, u.email, u.location_id, l.localidad
+      FROM users u
+      LEFT JOIN locations l ON u.location_id = l.id
+      WHERE u.id = $1
+    `;
+
+    const result = await pool.query(query, [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.status(200).json({ user: result.rows[0] });
+
+  } catch (error) {
+    console.error('Error al obtener perfil:', error);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+
 
 
 // Obtener ubicaciones disponibles en la base de datos
