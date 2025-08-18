@@ -1,19 +1,19 @@
 import dotenv from 'dotenv';
 import pkg from 'pg';
+import { DB_USER, DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT } from '../env/env.js';
 
 // Cargar variables de entorno primero
 dotenv.config();
 
 const { Pool } = pkg;
 
-
 // Configurar el pool de conexiones con las variables de entorno
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  user: DB_USER,
+  host: DB_HOST,
+  database: DB_DATABASE,
+  password: DB_PASSWORD,
+  port: DB_PORT,
   ssl: process.env.DB_SSL === 'true',
 });
 

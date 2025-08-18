@@ -97,3 +97,59 @@ export const validarLogin = [
       return true;
     }),
 ];
+
+export const validarNuevoUsuario = [
+  body("nombre")
+    .trim()
+    .notEmpty()
+    .withMessage("El nombre de usuario no debe estar vacío")
+    .matches(/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ0-9]+$/)
+    .withMessage("El nombre contiene caracteres no permitidos")
+    .custom((value) => {
+      if (sqlInjectionPattern.test(value)) {
+        throw new Error("El nombre contiene patrones inválidos");
+      }
+      return true;
+    }),
+
+  body("dni")
+    .trim()
+    .notEmpty()
+    .withMessage("El DNI no debe estar vacío")
+    .matches(/^[0-9]+$/)
+    .withMessage("El DNI debe contener solo números")
+    .isLength({ min: 8, max: 8 })
+    .withMessage("El DNI debe tener exactamente 8 caracteres")
+    .custom((value) => {
+      if (sqlInjectionPattern.test(value)) {
+        throw new Error("El DNI contiene patrones inválidos");
+      }
+      return true;
+    }),
+
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("El correo electrónico es obligatorio")
+    .isEmail()
+    .withMessage("Debe ser un correo electrónico válido")
+    .custom((value) => {
+      if (sqlInjectionPattern.test(value)) {
+        throw new Error("El correo electrónico contiene patrones inválidos");
+      }
+      return true;
+    }),
+
+  body("password")
+    .trim()
+    .notEmpty()
+    .withMessage("La contraseña no puede estar vacía")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/)
+    .withMessage("La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y símbolos")
+    .custom((value) => {
+      if (sqlInjectionPattern.test(value)) {
+        throw new Error("La contraseña contiene patrones inválidos");
+      }
+      return true;
+    }),
+];

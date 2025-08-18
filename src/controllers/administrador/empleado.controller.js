@@ -1,74 +1,54 @@
 //gestion de empleados basicamente
-import pool from "../../dataBase/pool.js";
+import { updateEmployeeUserService } from "../../services/employeeServices/employees.services.js";
 
+import pool from "../../dataBase/pool.js";
 //! ACTUALIZA LOS DATOS DE UN EMPLEADO O CIUDADANO
 
 export const updateEmployeeUser = async (req, res) => {
-    const { id } = req.params;
-    const { nombre, email, password, role_nombre } = req.body;
+  const userRequester = req.user;
+  const { id } = req.params;
+  const { nombre, email, dni, password, role_id } = req.body;
 
-    if (!id) {
-        return res.status(400).json({ msg: "ID no encontrado" });
+  try {
+    const msg = await updateEmployeeUserService(userRequester, id, { nombre, email, dni, password, role_id });
+    return res.status(200).json({ msg });
+  } catch (error) {
+    console.error(error);
+    const status = error.statusCode || 500;
+    const message = error.message || "Error al actualizar el usuario";
+    return res.status(status).json({ msg: message });
+  }
+};
+
+//! CAMBIA EL ESTADO DE CUENTA DE UN USUARIO (activo/suspendido)
+
+export const toggleUserStatus = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET estado_cuenta = CASE 
+                             WHEN estado_cuenta = 'activo' THEN 'suspendido'
+                             ELSE 'activo'
+                           END
+       WHERE id = $1
+       RETURNING estado_cuenta`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ msg: "Usuario no encontrado." });
     }
 
-    try {
-        // Buscar usuario
-        const user = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
-        if (user.rows.length === 0) {
-            return res.status(404).json({ msg: "Usuario no encontrado" });
-        }
+    const nuevoEstado = result.rows[0].estado_cuenta;
 
-        let role_id = null;
-        if (role_nombre) {
-            const roleResult = await pool.query(
-                'SELECT id FROM roles WHERE nombre = $1',
-                [role_nombre]
-            );
-            if (roleResult.rows.length === 0) {
-                return res.status(404).json({ msg: "Rol no encontrado" });
-            }
-            role_id = roleResult.rows[0].id;
-        }
-
-        const updates = [];
-        const values = [];
-        let count = 1;
-
-        if (nombre) {
-            updates.push(`nombre = $${count++}`);
-            values.push(nombre);
-        }
-        if (email) {
-            updates.push(`email = $${count++}`);
-            values.push(email);
-        }
-        if (password) {
-            updates.push(`password = $${count++}`);
-            values.push(password);
-        }
-        if (role_id) {
-            updates.push(`role_id = $${count++}`);
-            values.push(role_id);
-        }
-
-        if (updates.length === 0) {
-            return res.status(400).json({ msg: "No se proporcionaron campos para actualizar" });
-        }
-
-        values.push(id);
-
-        const query = `
-            UPDATE users
-            SET ${updates.join(', ')}
-            WHERE id = $${count}
-        `;
-
-        await pool.query(query, values);
-
-        return res.status(200).json({ msg: "Usuario actualizado exitosamente" });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ msg: "Error al actualizar el usuario" });
-    }
+    return res.status(200).json({
+      msg: `Usuario ${nuevoEstado === "activo" ? "activado" : "suspendido"} correctamente.`,
+      estado_cuenta: nuevoEstado,
+    });
+  } catch (err) {
+    console.error("Error al cambiar estado de cuenta:", err.message);
+    return res.status(500).json({ msg: "Error del servidor." });
+  }
 };

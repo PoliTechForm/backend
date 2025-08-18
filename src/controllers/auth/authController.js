@@ -8,18 +8,18 @@ export const registerUser = async (req, res, next) => {
   console.log('Datos recibidos:', { nombre, dni, email, sexo, location_id });
 
   try {
-    // Validación preliminar para dni (opcional, según requisitos)
+    // validación  para dni 
     if (!dni) {
       return res.status(400).json({ error: 'El DNI es obligatorio' });
     }
 
-    // Validar si DNI ya está registrado:
+    //  si DNI ya esta registrado:
     const dniExistsResult = await pool.query('SELECT id FROM users WHERE dni = $1', [dni]);
     if (dniExistsResult.rows.length > 0) {
       return res.status(400).json({ error: 'El DNI ya está registrado' });
     }
 
-    // Registrar usuario
+    // registrar usuario
     await registerUserService(nombre, dni, email, password, role, recaptchaToken, sexo, location_id);
 
     return res.status(201).json({
@@ -66,11 +66,11 @@ export const loginUser = async (req, res) => {
         userId: dataLogin.userId,
       });
     }
-    // ... resto del código
+   
 
     console.log('dataLogin en loginUser:', dataLogin);
 
-    //Recolecta métricas de inicios de sesión
+    //recolecta métricas de inicios de sesión
     await login_metrics(dataLogin.userWithoutPassword.id, platform, true);
 
 
@@ -300,10 +300,10 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-// Actualizar datos del perfil de usuario
+// actualizar datos del perfil de usuario
 export const updateUserProfile = async (req, res) => {
   const userId = req.user.id;
-  const { nombre, location_id } = req.body;  // Aquí la propiedad debe ser location_id
+  const { nombre, location_id } = req.body;  //  la propiedad debe ser location_id
 
   const updates = [];
   const values = [];
@@ -318,7 +318,7 @@ export const updateUserProfile = async (req, res) => {
   }
 
   if (location_id !== undefined) {
-    // Opcional: validar que location_id no sea vacío (si quieres permitir quitar ubicación, ajustar)
+    //validar que location_id no sea vacio
     if (location_id === null || location_id === '') {
       updates.push(`location_id = NULL`);
     } else {
