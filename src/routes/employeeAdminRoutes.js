@@ -9,5 +9,6 @@ export const employeeAdminRoute = Router();
 
 //! PERMITE AL EMPLEADO Y AL ADMINISTRADOR CREAR USUARIOS
 
-employeeAdminRoute.post("/createUser", validarNuevoUsuario, validationError, validarJwt, createUser)
+employeeAdminRoute.post("/createUser", validarJwt, validarNuevoUsuario, validationError, createUser);
+
 employeeAdminRoute.delete("/deleteUser/:id", validarJwt, deleteUser)

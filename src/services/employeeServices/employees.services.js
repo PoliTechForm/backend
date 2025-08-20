@@ -9,7 +9,9 @@ export const createUserService = async (
   dni,
   email,
   password,
-  role = "ciudadano"
+  role = "ciudadano", 
+  sexo,
+  location_id
 ) => {
   const result = await pool.query(
     `SELECT r.nombre FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
@@ -54,9 +56,9 @@ export const createUserService = async (
   const userId = uuidv4();
 
   await pool.query(
-    `INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email)
-         VALUES ($1, $2, $3, $4, $5, $6, false)`,
-    [userId, nombre, dni, email, passwordHash, roleId]
+    `INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email, sexo, location_id)
+         VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)`,
+    [userId, nombre, dni, email, passwordHash, roleId, sexo, location_id]
   );
 
   await sendVerificationEmail(email);
