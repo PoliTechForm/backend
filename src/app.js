@@ -33,7 +33,7 @@ app.use('/api', userRoute);
 //! funciones de administrador
 app.use('/admin', adminRoute)
 //! funciones de empleado
-app.use('/employee', employeeRoute)
+app.use('/empleado', employeeRoute)
 //! funciones conjuntas de empleado y administrador
 app.use('/employee-Admin', employeeAdminRoute)
 //! Metricas

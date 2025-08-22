@@ -1,10 +1,19 @@
+// employee.routes.js
 import { Router } from "express";
-import { generateReport, updateInfoUser } from "../controllers/empleado/employee.controller.js";
+import { generateReport, updateInfoUser, deleteUser } from "../controllers/empleado/employee.controller.js";
 import { validarJwt } from "../jwt/validateJwt/validateJwt.js";
+import { body } from "express-validator";
 
-export const employeeRoute = Router()
+export const employeeRoute = Router();
 
-//! PERMITE AL EMPLEADO ENVIAR REPORTES Y TAMBIÉN ACTUALIZAR DATOS DE CIUDADANOS EN CASO DE QUE LO NECESITEN
+// Validación de reporte
+const validarReporte = [
+    body("asunto").notEmpty().withMessage("El asunto es obligatorio"),
+    body("description").notEmpty().withMessage("La descripción es obligatoria")
+];
 
-employeeRoute.post("/sendReport",validarJwt, generateReport)
-employeeRoute.patch("/updateUser/:id", validarJwt, updateInfoUser)
+// Rutas de empleado
+employeeRoute.post("/reportes", validarJwt, validarReporte, generateReport);
+employeeRoute.put("/usuarios/:id", validarJwt, updateInfoUser);
+employeeRoute.delete("/usuarios/:id", validarJwt, deleteUser);
+    
