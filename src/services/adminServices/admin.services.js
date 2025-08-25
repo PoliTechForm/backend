@@ -15,7 +15,7 @@ export const toggleUserStatusService = async (id) => {
 
     if (result.rows.length === 0) {
         const error = new Error("Usuario no encontrado.");
-        error.status = 404; // Se lanza el estado para que el controlador lo use
+        error.status = 404; //s
         throw error;
     }
 
