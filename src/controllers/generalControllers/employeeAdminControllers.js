@@ -6,7 +6,7 @@ import { createUserService } from "../../services/employeeServices/employees.ser
 
 export const createUser = async(req, res) => {
     const user = req.user;
-    const { nombre, dni, email, password, role = 'ciudadano', sexo, location_id } = req.body;
+    const { nombre, dni, email, password, role, sexo, location_id } = req.body;
     
       try {
         await createUserService(user, nombre, dni, email, password, role, sexo, location_id);
