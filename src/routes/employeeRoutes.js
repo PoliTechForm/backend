@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { generateReport, getMyReports, updateInfoUser, deleteUser } from "../controllers/empleado/employee.controller.js";
-import { validarJwt } from "../jwt/validateJwt/validateJwt.js";
+import { generateReport, getMyReports, updateInfoUser, deleteUser, createTemplate, getTemplates } from "../controllers/empleado/employee.controller.js";import { validarJwt } from "../jwt/validateJwt/validateJwt.js";
 import { body } from "express-validator";
 
 export const employeeRoute = Router();
@@ -14,8 +13,12 @@ const validarReporte = [
 // Rutas de empleado
 employeeRoute.post("/reportes", validarJwt, validarReporte, generateReport);
 
-// ✨ NUEVA RUTA: GET para obtener reportes ✨
+// obtener reportes 
 employeeRoute.get("/reportes", validarJwt, getMyReports);
+
+employeeRoute.post("/plantillas", validarJwt, createTemplate);
+employeeRoute.get("/plantillas", validarJwt, getTemplates);
+
 
 employeeRoute.put("/usuarios/:id", validarJwt, updateInfoUser);
 employeeRoute.delete("/usuarios/:id", validarJwt, deleteUser);
