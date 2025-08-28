@@ -3,23 +3,6 @@ import bcrypt from "bcrypt";
 import { generateReportService, getMyReportsService, updateInfoUserService, deleteUserService } from "../../services/employeeServices/employees.services.js";
 import { validationResult } from "express-validator";
 
-// Generar reporte
-export const generateReport = async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const user = req.user;
-    const { asunto, description } = req.body;
-
-    try {
-        await generateReportService(user, asunto, description);
-        res.status(201).json({ msg: "Reporte enviado exitosamente" });
-    } catch (error) {
-        res.status(error.status || 500).json({ msg: error.message || "Hubo un error inesperado" });
-    }
-};
 
 //  Obtener los reportes del empleado
 export const getMyReports = async (req, res) => {

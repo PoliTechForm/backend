@@ -66,6 +66,8 @@ export const createUserService = async (
 
 export const generateReportService = async (user, asunto, description) => {
     const nombre = user.nombre;
+console.log("User recibido en generateReportService:", user);
+console.log("Asunto:", asunto, "Description:", description);
 
     if (!asunto || !description) {
         const error = new Error("Asunto y descripción son obligatorios.");
@@ -84,11 +86,11 @@ export const generateReportService = async (user, asunto, description) => {
         throw error;
     }
 
-    if (result.rows[0].nombre !== "Empleado") {
-        const error = new Error("No tienes acceso a esa función.");
-        error.status = 403;
-        throw error;
-    }
+if (result.rows[0].nombre !== "Empleado" && result.rows[0].nombre !== "administrador") { //cambiar para que los admins tambien puedan crear reportes 
+    const error = new Error("No tienes acceso a esa función.");
+    error.status = 403;
+    throw error;
+}
 
     await pool.query(
         "INSERT INTO reports (user_id, nombre, asunto, description) VALUES ($1, $2, $3, $4)",
