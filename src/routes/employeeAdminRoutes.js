@@ -6,7 +6,7 @@ import { generateReport } from "../controllers/generalControllers/employeeAdminC
 import { validarNuevoUsuario } from "../validations/validations.js";
 import { deleteUser } from "../controllers/empleado/employee.controller.js";
 import { body } from "express-validator";
-
+//
 
 export const employeeAdminRoute = Router();
  // Validación de reporte
