@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {  getMyReports, updateInfoUser, deleteUser, createTemplate, getTemplates } from "../controllers/empleado/employee.controller.js";
+import {  getMyReports, deleteUser, createTemplate, getTemplates } from "../controllers/empleado/employee.controller.js";
 import { validarJwt } from "../jwt/validateJwt/validateJwt.js";
 
 
@@ -14,5 +14,5 @@ employeeRoute.post("/plantillas", validarJwt, createTemplate);
 employeeRoute.get("/plantillas", validarJwt, getTemplates);
 
 
-employeeRoute.put("/usuarios/:id", validarJwt, updateInfoUser);
+employeeRoute.put("/usuarios/:id", validarJwt);
 employeeRoute.delete("/usuarios/:id", validarJwt, deleteUser);

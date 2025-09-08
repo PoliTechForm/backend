@@ -1,17 +1,14 @@
 import pool from "../../dataBase/pool.js";
-import bcrypt from "bcrypt";
-import { v4 as uuidv4 } from 'uuid';
-import sendVerificationEmail from "../../services/verify.Email.Service.js";
 import { createUserService } from "../../services/employeeServices/employees.services.js";
 import { validationResult } from "express-validator";
 import { generateReportService } from "../../services/employeeServices/employees.services.js";
 
 export const createUser = async(req, res) => {
     const user = req.user;
-    const { nombre, dni, email, password, role, sexo, location_id } = req.body;
-    
+    const { nombre, dni, email, password, role = 'ciudadano' } = req.body;
+
       try {
-        await createUserService(user, nombre, dni, email, password, role, sexo, location_id);
+        await createUserService(user, nombre, dni, email, password, role);
         res.status(201).json({
           message: 'Usuario creado con éxito.'
         });

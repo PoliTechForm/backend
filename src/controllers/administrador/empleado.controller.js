@@ -1,7 +1,7 @@
 import { 
     toggleUserStatusService,
     getAllReportsService
-} from "../../services/adminServices/admin.services.js"; // Asegúrate de que todas estén aquí
+} from "../../services/adminServices/admin.services.js";
 import { updateEmployeeUserService } from "../../services/employeeServices/employees.services.js";
 //! ACTUALIZA LOS DATOS DE UN EMPLEADO O CIUDADANO
 export const updateEmployeeUser = async (req, res) => {

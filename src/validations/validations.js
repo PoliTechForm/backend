@@ -153,3 +153,30 @@ export const validarNuevoUsuario = [
       return true;
     }),
 ];
+export const validarChangePassword = [
+  body("currentPassword")
+    .trim()
+    .notEmpty()
+    .withMessage("La contraseña actual es obligatoria")
+    .matches(/^(?=.[a-z])(?=.[A-Z])(?=.\d)(?=.[\W]).{8,}$/)
+    .withMessage({ msg: "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y símbolos" })
+    .custom((value) => {
+      if (sqlInjectionPattern.test(value)) {
+        throw new Error("La contraseña contiene patrones inválidos");
+      }
+      return true;
+    }),
+
+    body("newPassword")
+    .trim()
+    .notEmpty()
+    .withMessage("La nueva contraseña es obligatoria")
+    .matches(/^(?=.[a-z])(?=.[A-Z])(?=.\d)(?=.[\W]).{8,}$/)
+    .withMessage({ msg: "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y símbolos" })
+    .custom((value) => {
+      if (sqlInjectionPattern.test(value)) {
+        throw new Error("La contraseña contiene patrones inválidos");
+      }
+      return true;
+    }),
+];

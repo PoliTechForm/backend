@@ -1,6 +1,6 @@
 import pool from "../../dataBase/pool.js";
 import bcrypt from "bcrypt";
-import { generateReportService, getMyReportsService, updateInfoUserService, deleteUserService } from "../../services/employeeServices/employees.services.js";
+import { generateReportService, getMyReportsService, deleteUserService } from "../../services/employeeServices/employees.services.js";
 import { validationResult } from "express-validator";
 
 
@@ -16,19 +16,6 @@ export const getMyReports = async (req, res) => {
     }
 };
 
-
-export const updateInfoUser = async (req, res) => {
-    const user = req.user;
-    const { id } = req.params;
-    const { nombre, email, password } = req.body;
-    try {
-        await updateInfoUserService(user, id, nombre, email, password);
-        res.status(200).json({ msg: "Usuario actualizado exitosamente" });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ msg: "Error al actualizar el usuario" });
-    }
-};
 
 export const deleteUser = async (req, res) => {
     try {
