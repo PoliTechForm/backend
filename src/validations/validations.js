@@ -153,7 +153,6 @@ export const validarNuevoUsuario = [
       return true;
     }),
 ];
-
 export const validarChangePassword = [
   body("currentPassword")
     .trim()

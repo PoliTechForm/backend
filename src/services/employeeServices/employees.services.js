@@ -12,7 +12,7 @@ export const createUserService = async (
   role = "ciudadano"
 ) => {
   const result = await pool.query(
-    `SELECT r.nombre FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
+    "SELECT r.nombre FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1",
     [user.id]
   );
 
@@ -54,130 +54,77 @@ export const createUserService = async (
   const userId = uuidv4();
 
   await pool.query(
-    `INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email)
-         VALUES ($1, $2, $3, $4, $5, $6, false)`,
+    "INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email) VALUES ($1, $2, $3, $4, $5, $6, false)",
     [userId, nombre, dni, email, passwordHash, roleId]
   );
 
   await sendVerificationEmail(email);
 };
 
+ 
+
 export const generateReportService = async (user, asunto, description) => {
-  const nombre = user.nombre;
+    const nombre = user.nombre;
+console.log("User recibido en generateReportService:", user);
+console.log("Asunto:", asunto, "Description:", description);
 
-  if (!asunto || !description) {
-    const error = new Error("Asunto y descripción son obligatorios.");
-    error.status = 400;
-    throw error;
-  }
+    if (!asunto || !description) {
+        const error = new Error("Asunto y descripción son obligatorios.");
+        error.status = 400;
+        throw error;
+    }
 
-  const result = await pool.query(
-    ` SELECT r.nombre FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
-    [user.id]
-  );
+    const result = await pool.query(
+        `SELECT r.nombre FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
+        [user.id]
+    );
 
-  if (result.rows.length === 0) {
-    const error = new Error("Usuario no encontrado.");
-    error.status = 404;
-    throw error;
-  }
+    if (result.rows.length === 0) {
+        const error = new Error("Usuario no encontrado.");
+        error.status = 404;
+        throw error;
+    }
 
-  if (result.rows[0].nombre !== "Empleado") {
+if (result.rows[0].nombre !== "Empleado" && result.rows[0].nombre !== "administrador") { //cambiar para que los admins tambien puedan crear reportes 
     const error = new Error("No tienes acceso a esa función.");
     error.status = 403;
     throw error;
-  }
+}
 
-  await pool.query(
-    "INSERT INTO reports (user_id, nombre, asunto, description) VALUES ($1, $2, $3, $4)",
-    [user.id, nombre, asunto, description]
-  );
+    await pool.query(
+        "INSERT INTO reports (user_id, nombre, asunto, description) VALUES ($1, $2, $3, $4)",
+        [user.id, nombre, asunto, description]
+    );
 };
 
-export const updateInfoUserService = async (
-  user,
-  id,
-  nombre,
-  email,
-  password
-) => {
-  const result = await pool.query(
-    ` SELECT r.nombre FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
-    [user.id]
-  );
-  if (result.rows.length === 0) {
-    const error = new Error("Usuario no encontrado.");
-    error.status = 404;
-    throw error;
-  }
 
-  if (result.rows[0].nombre !== "Empleado") {
-    const error = new Error("No tienes acceso a esa función.");
-    error.status = 403;
-    throw error;
-  }
-
-  if (!id) {
-    const error = new Error("Id no encontrado.");
-    error.status = 400;
-    throw error;
-  }
-
-  const usuario = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
-  if (usuario.rows.length === 0) {
-    const error = new Error("Usuario no encontrado.");
-    error.status = 404;
-    throw error;
-  }
-
-  const updates = [];
-  const values = [];
-  let count = 1;
-
-  if (nombre) {
-    updates.push(`nombre = $${count++}`);
-    values.push(nombre);
-  }
-  if (email) {
-    updates.push(`email = $${count++}`);
-    values.push(email);
-  }
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-    updates.push(`password_hash = $${count++}`);
-    values.push(passwordHash);
-  }
-
-  if (updates.length === 0) {
-    const error = new Error("No se proporcionaron campos para actualizar.");
-    error.status = 400;
-    throw error;
-  }
-
-  values.push(id);
-
-  const query = `
-            UPDATE users
-            SET ${updates.join(", ")}
-            WHERE id = $${count}
-        `;
-
-  await pool.query(query, values);
+export const getMyReportsService = async (user) => {
+    try {
+        const result = await pool.query(
+            `SELECT * FROM reports WHERE user_id = $1 ORDER BY created_at DESC`,
+            [user.id]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error("Error en getMyReportsService:", error);
+        throw { status: 500, message: "Error del servidor al obtener los reportes." };
+    }
 };
+
+
 
 export const deleteUserService = async (id) => {
-    if(!id){
+    if (!id) {
         const error = new Error("Id de usuario no proporcionado.");
         error.status = 400;
         throw error;
-        }
+    }
     const result = await pool.query('DELETE FROM public.users WHERE id = $1', [id])
-        if(result.rowCount === 0) {
-    const error = new Error("El usuario con esa id no fue encontrado.");
+    if (result.rowCount === 0) {
+        const error = new Error("El usuario con esa id no fue encontrado.");
         error.status = 404;
         throw error;
-        }    
+    }
 }
 
 export const updateEmployeeUserService = async (userRequester, id, { nombre, email, dni, password, role_id }) => {

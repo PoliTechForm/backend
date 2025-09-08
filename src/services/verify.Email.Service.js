@@ -22,8 +22,11 @@ const sendVerificationEmail = async (email) => {
     from: EMAIL_ENTERPRISE,
     to: email,
     subject: 'Verificación de Correo Electrónico',
-    html: `<p>Haz clic en el siguiente enlace para verificar tu correo electrónico:</p>
-           <a href="${verificationUrl}">${verificationUrl}</a>`,
+    html: `
+  <p>Haz clic en el siguiente enlace para verificar tu correo electrónico:</p>
+  <a href="${verificationUrl}">${verificationUrl}</a>
+`,
+
   };
 
   try {
