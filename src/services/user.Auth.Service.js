@@ -25,10 +25,18 @@ export const registerUserService = async (nombre, dni, email, password, role = "
     throw error;
   }
 
-  // Verificar si ya existe el usuario
+  // Verificar si ya existe el usuario por email
   const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
   if (userExists.rows.length > 0) {
     const error = new Error('El correo ya está registrado');
+    error.status = 400;
+    throw error;
+  }
+
+  // Verificar si ya existe el DNI
+  const dniExists = await pool.query('SELECT * FROM users WHERE dni = $1', [dni]);
+  if (dniExists.rows.length > 0) {
+    const error = new Error('El DNI ya está registrado');
     error.status = 400;
     throw error;
   }
