@@ -1,22 +1,16 @@
 import { Router } from "express";
 import { getEmployeesAndCitizens } from "../controllers/generalControllers/employeeAdminControllers.js";
-import { updateProfile, getUbicaciones, getProfile } from '../controllers/auth/authController.js';
-import { validarJwt } from '../jwt/validateJwt/validateJwt.js';
+import { getUserProfile, updateUserProfile } from "../controllers/auth/authController.js";
+import { validarJwt } from "../jwt/validateJwt/validateJwt.js"; 
 
-const userRoute = Router()
+const userRoute = Router();
 
 //! PERMITE AL ADMINISTRADOR Y AL EMPLEADO VER TODOS LOS USUARIOS
+userRoute.get("/users", getEmployeesAndCitizens);
 
-userRoute.get("/users", getEmployeesAndCitizens)
+// Rutas protegidas
+userRoute.get("/profile", validarJwt, getUserProfile); // Ver perfil
 
-// Ruta para obtener el perfil del usuario autenticado
+userRoute.patch("/update-profile", validarJwt, updateUserProfile);   // Actualizar perfil
 
-// Ruta para que el usuario autenticado actualice su perfil
-userRoute.patch('/profile', validarJwt, updateProfile);
-
-userRoute.get('/getProfile', validarJwt, getProfile )
-
-// Ruta para obtener ubicaciones disponibles
-userRoute.get('/ubicaciones', getUbicaciones);
-
-export default userRoute
+export default userRoute;

@@ -6,7 +6,22 @@ import axios from 'axios';
 import pool from "../dataBase/pool.js";
 import { createJwt } from "../jwt/createJwt/createJwt.js";
 
-export const registerUserService = async (nombre, dni, email, password, role = "ciudadano", recaptchaToken) => {
+export const registerUserService = async (nombre, dni, email, password, role = "ciudadano", recaptchaToken, sexo, location_id) => {
+  // location_id ya viene del frontend
+
+  // Validar que location_id sea válido y exista en la tabla locations (opcional pero recomendable)
+  if (location_id) {
+    const locResult = await pool.query('SELECT id FROM locations WHERE id = $1', [location_id]);
+    if (locResult.rows.length === 0) {
+      const error = new Error('Ubicación inválida');
+      error.status = 400;
+      throw error;
+    }
+  }
+  // Log para verificar que location_id se está recibiendo correctamente
+
+  console.log("location_id obtenido en registerUserService:", location_id);
+
   // Verificar captcha
   const captchaResponse = await axios.post(
     'https://www.google.com/recaptcha/api/siteverify',
@@ -55,17 +70,18 @@ export const registerUserService = async (nombre, dni, email, password, role = "
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(password, salt);
 
-  // Crear el usuario
+  // Crear el usuario con location_id (que puede ser null si no se pasó ubicacion)
   const userId = uuidv4();
-  await pool.query(
-    `INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email)
-     VALUES ($1, $2, $3, $4, $5, $6, false)`,
-    [userId, nombre, dni, email, passwordHash, roleId]
+ await pool.query(
+    `INSERT INTO users (id, nombre, dni, email, password_hash, role_id, verificado_email, sexo, location_id)
+     VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)`,
+    [userId, nombre, dni, email, passwordHash, roleId, sexo, location_id]
   );
 
   // Enviar el correo de verificación
   await sendVerificationEmail(email);
 };
+
 
 export const loginUserService = async (email, password) => {
   const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -136,9 +152,26 @@ export const userVerifyTwoFactorService = async (userId, code) => {
     [userId, code]
   );
 
-  // Generar token JWT y retornarlo
+
+  // obtener los datos completos del usuario
+  const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+  if (userResult.rows.length === 0) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const user = userResult.rows[0];
+  
+  // Generar token JWT
   const token = await createJwt(userId);
-  return token;
+  
+  // Remover la contraseña del objeto usuario
+  const { password_hash, ...userWithoutPassword } = user;
+
+  // Retornar tanto el token como los datos del usuario
+  return {
+    token,
+    userWithoutPassword
+  };
 } 
 
 export const changeUserPasswordService = async (userId, currentPassword, newPassword) => {

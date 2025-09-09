@@ -3,23 +3,35 @@ import { generateAndSend2FACode } from '../../services/2FA/twoFactors.service.js
 import { login_metrics } from '../../services/recolectarMetricas/collectMetrics.Service.js';
 import pool from '../../dataBase/pool.js';
 import bcrypt from 'bcrypt';
-
-
-export const registerUser = async (req, res) => {
-  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken } = req.body;
-  console.log('DNI recibido en backend:', dni, typeof dni);
+export const registerUser = async (req, res, next) => {
+  const { nombre, dni, email, password, role = 'ciudadano', recaptchaToken, sexo, location_id } = req.body;
+  console.log('Datos recibidos:', { nombre, dni, email, sexo, location_id });
 
   try {
-    await registerUserService(nombre, dni, email, password, role, recaptchaToken);
-    res.status(201).json({
+    // validación  para dni 
+    if (!dni) {
+      return res.status(400).json({ error: 'El DNI es obligatorio' });
+    }
+
+    //  si DNI ya esta registrado:
+    const dniExistsResult = await pool.query('SELECT id FROM users WHERE dni = $1', [dni]);
+    if (dniExistsResult.rows.length > 0) {
+      return res.status(400).json({ error: 'El DNI ya está registrado' });
+    }
+
+    // registrar usuario
+    await registerUserService(nombre, dni, email, password, role, recaptchaToken, sexo, location_id);
+
+    return res.status(201).json({
       message: 'Usuario registrado con éxito. Revisa tu correo para verificar tu cuenta.'
     });
+
   } catch (err) {
-    console.error('Registration error:', err);
-    console.log('Registration error details:', err.message);
-    res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
+    console.error('Error en el registro:', err.message, err);
+    return res.status(err.status || 500).json({ error: err.message || 'Error del servidor' });
   }
 };
+
 
 export const verifyEmail = async (req, res) => {
   const { token } = req.query;
@@ -38,7 +50,7 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const dataLogin = await loginUserService(email, password);
-
+    
     if (dataLogin.twoFactorRequired) {
       // Validar que userId existe
       if (!dataLogin.userId) {
@@ -54,12 +66,13 @@ export const loginUser = async (req, res) => {
         userId: dataLogin.userId,
       });
     }
-    // ... resto del código
+   
 
     console.log('dataLogin en loginUser:', dataLogin);
 
-    //Recolecta métricas de inicios de sesión
+    //recolecta métricas de inicios de sesión
     await login_metrics(dataLogin.userWithoutPassword.id, platform, true);
+
 
     const responseData = {
       message: 'Inicio de sesión exitoso',
@@ -116,12 +129,13 @@ export const verify2FACode = async (req, res) => {
     // Plataforma del cliente
     const platform = req.headers['x-platform'] || 'web';
 
-    const token = await userVerifyTwoFactorService(userId, code);
+ const { token, userWithoutPassword } = await userVerifyTwoFactorService(userId, code);
 
     // Respuesta para ambas plataformas
     const responseData = {
       message: '2FA verificado, inicio de sesión exitoso',
-      token: token // Incluir el token para clientes móviles
+      token,
+      user: userWithoutPassword //necesario para front // Incluir el token para clientes móviles
     };
 
     // Para web, también establecemos la cookie
@@ -133,7 +147,7 @@ export const verify2FACode = async (req, res) => {
       });
     }
 
-    res.json(responseData);
+    res.status(200).json(responseData);//mandar datos completos
 
   } catch (err) {
     console.error('Error al verificar 2FA:', err.message);
@@ -201,6 +215,32 @@ export const resetPassword = async (req, res) => {
     res.status(400).json({ error: err.message || 'Error del servidor' });
   }
 };
+//localidades
+export const getLocations = async (req, res) => {
+  try {
+    const query = `
+      SELECT id, localidad, departamento, provincia 
+      FROM locations 
+      ORDER BY provincia ASC, departamento ASC, localidad ASC
+    `;
+    
+    const result = await pool.query(query);
+    
+    // Formatear las ubicaciones para mostrar: "localidad, departamento, provincia"
+    const ubicaciones = result.rows.map(row => ({
+      id: row.id,
+      display: `${row.localidad}, ${row.departamento}, ${row.provincia}`,
+      localidad: row.localidad,
+      departamento: row.departamento,
+      provincia: row.provincia
+    }));
+    
+    return res.status(200).json({ ubicaciones });
+  } catch (error) {
+    console.error('Error al obtener ubicaciones:', error);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
 
 export const enableOrDisableTwoFactor = async (req, res) => {
   try {
@@ -247,106 +287,59 @@ export const enableOrDisableTwoFactor = async (req, res) => {
   }
 };
 
-// Actualizar perfil del usuario autenticado
-// Actualizar perfil del usuario autenticado
-// Actualizar perfil del usuario autenticado
-export const updateProfile = async (req, res) => {
-  console.log('updateProfile body:', req.body);
-  console.log('updateProfile user:', req.user);
-
+// Obtener perfil del usuario autenticado
+export const getUserProfile = async (req, res) => {
+  const userId = req.user.id;
   try {
-    const userId = req.user?.id;
-    const { nombre, sexo, dni, location_id } = req.body; // Ahora recibimos directamente el ID de la ubicación
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuario no autenticado' });
-    }
-
-    // Validar que al menos un campo venga
-    if (!nombre && !sexo && !dni && !location_id) {
-      return res.status(400).json({ error: 'No se enviaron campos para actualizar' });
-    }
-
-    const updates = [];
-    const values = [];
-    let count = 1;
-
-    if (nombre) {
-      updates.push(`nombre = $${count++}`);
-      values.push(nombre);
-    }
-    if (sexo) {
-      updates.push(`sexo = $${count++}`);
-      values.push(sexo);
-    }
-    if (dni) {
-      updates.push(`dni = $${count++}`);
-      values.push(dni);
-    }
-    if (location_id) {
-      // Verificar que la ubicación exista en locations
-      const checkLoc = await pool.query(
-        'SELECT id FROM locations WHERE id = $1',
-        [location_id]
-      );
-      if (checkLoc.rows.length === 0) {
-        return res.status(400).json({ error: 'La ubicación seleccionada no existe' });
-      }
-
-      updates.push(`location_id = $${count++}`);
-      values.push(location_id);
-    }
-
-    values.push(userId);
-
-    const query = `
-      UPDATE users
-      SET ${updates.join(', ')}
-      WHERE id = $${count}
-      RETURNING id, nombre, sexo, dni, email, location_id
-    `;
-    console.log('Executing query:', query);
-    console.log('With values:', values);
-
-    const result = await pool.query(query, values);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    return res.status(200).json({
-      message: 'Perfil actualizado exitosamente',
-      user: result.rows[0]
-    });
-
-  } catch (error) {
-    console.error('Error al actualizar perfil:', error);
-    return res.status(500).json({ error: 'Error del servidor' });
-  }
-};
-
-export const getProfile = async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuario no autenticado' });
-    }
-
-    const query = `
-      SELECT u.id, u.nombre, u.sexo, u.dni, u.email, u.location_id, l.localidad
+    const result = await pool.query(
+      `
+      SELECT 
+        u.id, 
+        u.nombre, 
+        u.dni,
+        u.email, 
+        u.role_id, 
+        u.estado_cuenta AS estado, 
+        u.fecha_creacion AS created_at, 
+        u.two_factor_enabled, 
+        u.sexo, 
+        u.location_id,
+        l.localidad,
+        l.departamento,
+        l.provincia
       FROM users u
       LEFT JOIN locations l ON u.location_id = l.id
       WHERE u.id = $1
-    `;
-
-    const result = await pool.query(query, [userId]);
+      `,
+      [userId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    return res.status(200).json({ user: result.rows[0] });
+    const user = result.rows[0];
 
+    const location_display = user.localidad
+      ? `${user.localidad}, ${user.departamento}, ${user.provincia}`
+      : null;
+
+    return res.status(200).json({
+      id: user.id,
+      nombre: user.nombre,
+      dni: user.dni,
+      email: user.email,
+      role_id: user.role_id,
+      estado: user.estado,
+      created_at: user.created_at,
+      two_factor_enabled: user.two_factor_enabled,
+      sexo: user.sexo,
+      location_id: user.location_id,
+      location_display,
+      localidad: user.localidad,
+      departamento: user.departamento,
+      provincia: user.provincia,
+    });
   } catch (error) {
     console.error('Error al obtener perfil:', error);
     return res.status(500).json({ error: 'Error del servidor' });
@@ -354,33 +347,71 @@ export const getProfile = async (req, res) => {
 };
 
 
+export const updateUserProfile = async (req, res) => {
+  const userId = req.user?.id;
+  const { nombre, sexo, location_id } = req.body; // solo estos campos
 
+  if (!userId) {
+    return res.status(401).json({ error: 'Usuario no autenticado' });
+  }
 
-// Obtener ubicaciones disponibles en la base de datos
-export const getUbicaciones = async (req, res) => {
+  // Validar que al menos un campo venga
+  if (!nombre && !sexo && !location_id) {
+    return res.status(400).json({ error: 'No se enviaron campos para actualizar' });
+  }
+
+  const updates = [];
+  const values = [];
+  let count = 1;
+
+  if (nombre !== undefined) {
+    if (nombre.trim() === "") {
+      return res.status(400).json({ error: 'El nombre no puede estar vacío' });
+    }
+    updates.push(`nombre = $${count++}`);
+    values.push(nombre.trim());
+  }
+
+  if (sexo !== undefined) {
+    updates.push(`sexo = $${count++}`);
+    values.push(sexo);
+  }
+
+  if (location_id !== undefined) {
+    if (location_id === null || location_id === '') {
+      updates.push(`location_id = NULL`);
+    } else {
+      // opcional: validar que la ubicación exista en locations
+      const checkLoc = await pool.query('SELECT id FROM locations WHERE id = $1', [location_id]);
+      if (checkLoc.rows.length === 0) {
+        return res.status(400).json({ error: 'La ubicación seleccionada no existe' });
+      }
+      updates.push(`location_id = $${count++}`);
+      values.push(location_id);
+    }
+  }
+
+  values.push(userId);
+  const query = `
+    UPDATE users
+    SET ${updates.join(', ')}
+    WHERE id = $${count}
+    RETURNING id, nombre, sexo, email, location_id
+  `;
+
   try {
-    const query = `
-      SELECT id, localidad, departamento, provincia 
-      FROM locations 
-      ORDER BY provincia ASC, departamento ASC, localidad ASC
-    `;
-    
-    const result = await pool.query(query);
-    
-    // Formatear las ubicaciones para mostrar: "localidad, departamento, provincia"
-    const ubicaciones = result.rows.map(row => ({
-      id: row.id,
-      display: `${row.localidad}, ${row.departamento}, ${row.provincia}`,
-      localidad: row.localidad,
-      departamento: row.departamento,
-      provincia: row.provincia
-    }));
-    
-    return res.status(200).json({ ubicaciones });
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.status(200).json({
+      message: 'Perfil actualizado exitosamente',
+      user: result.rows[0],
+    });
   } catch (error) {
-    console.error('Error al obtener ubicaciones:', error);
+    console.error('Error al actualizar perfil:', error);
     return res.status(500).json({ error: 'Error del servidor' });
   }
 };
-
 

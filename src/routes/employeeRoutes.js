@@ -1,10 +1,18 @@
 import { Router } from "express";
-import { generateReport, updateInfoUser } from "../controllers/empleado/employee.controller.js";
+import {  getMyReports, deleteUser, createTemplate, getTemplates } from "../controllers/empleado/employee.controller.js";
 import { validarJwt } from "../jwt/validateJwt/validateJwt.js";
 
-export const employeeRoute = Router()
 
-//! PERMITE AL EMPLEADO ENVIAR REPORTES Y TAMBIÉN ACTUALIZAR DATOS DE CIUDADANOS EN CASO DE QUE LO NECESITEN
+export const employeeRoute = Router();
 
-employeeRoute.post("/sendReport",validarJwt, generateReport)
-employeeRoute.patch("/updateUser/:id", validarJwt, updateInfoUser)
+
+
+// obtener reportes 
+employeeRoute.get("/reportes", validarJwt, getMyReports);
+
+employeeRoute.post("/plantillas", validarJwt, createTemplate);
+employeeRoute.get("/plantillas", validarJwt, getTemplates);
+
+
+employeeRoute.put("/usuarios/:id", validarJwt);
+employeeRoute.delete("/usuarios/:id", validarJwt, deleteUser);

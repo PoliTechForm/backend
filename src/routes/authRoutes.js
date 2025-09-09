@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword, forgotPassword, resetPassword, enableOrDisableTwoFactor } from '../controllers/auth/authController.js';
+import { getSession, loginUser, logoutUser, registerUser,verifyEmail, verify2FACode, changePassword, forgotPassword, resetPassword, enableOrDisableTwoFactor, getLocations } from '../controllers/auth/authController.js';
 import { validarJwt } from '../jwt/validateJwt/validateJwt.js';
 import { validationError } from '../middlewares/validatorResult.js';
 import { validarLogin, validarRegistro, validarRecuperacion, validarResetPassword, validarChangePassword } from '../validations/validations.js';
@@ -18,12 +18,14 @@ authRouter.get('/session', validarJwt, getSession)
 
 authRouter.post('/logout',logoutUser)
 
-authRouter.post("/changePassword", validarChangePassword, validationError, validarJwt ,changePassword)
+authRouter.put("/changePassword",validarChangePassword,validationError,validarJwt ,changePassword)
 
 authRouter.post("/forgotPassword", validarRecuperacion, validationError, forgotPassword);
 
 authRouter.post("/resetPassword", validarResetPassword, validationError, resetPassword);
 
 authRouter.post("/enableDisable2fa", validarJwt, enableOrDisableTwoFactor )
+
+authRouter.get('/locations', getLocations);
 
 export default authRouter;
