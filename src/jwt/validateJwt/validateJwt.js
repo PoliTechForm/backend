@@ -20,7 +20,10 @@ export const validarJwt = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, SECRET_KEY);
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+    const result = await pool.query(
+      'SELECT u.*, r.nombre as role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1', 
+      [decoded.userId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(401).json('Token inválido');

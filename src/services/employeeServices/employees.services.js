@@ -85,7 +85,7 @@ console.log("Asunto:", asunto, "Description:", description);
         throw error;
     }
 
-if (result.rows[0].nombre !== "Empleado" && result.rows[0].nombre !== "administrador") { //cambiar para que los admins tambien puedan crear reportes 
+if (result.rows[0].nombre !== "Empleado" && result.rows[0].nombre !== "administrador" && result.rows[0].nombre !== "ciudadano") {
     const error = new Error("No tienes acceso a esa función.");
     error.status = 403;
     throw error;
